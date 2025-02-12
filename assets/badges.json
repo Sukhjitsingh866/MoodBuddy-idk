@@ -1,0 +1,24 @@
+{
+  "badges": [
+    {
+      "title": "First Habit",
+      "description": "Completed your first Habit",
+      "completed": true
+    },
+    {
+      "title": "5 Day Streak",
+      "description": "Completed a 5 day streak of habits",
+      "completed": false
+    },
+    {
+      "title": "10 Day Streak",
+      "description": "Completed a 10 day streak of habits",
+      "completed": false
+    },
+    {
+      "title": "First Journal Entry",
+      "description": "Completed your first journal entry",
+      "completed": false
+    }
+  ]
+}
