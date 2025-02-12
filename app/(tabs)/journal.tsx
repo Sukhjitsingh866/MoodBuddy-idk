@@ -1,7 +1,6 @@
 import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView } from "react-native";
 import React, { useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Replace react-datepicker
-import fs from "fs";
 import Jdata from '@/assets/journaldata.json';
 // import RNFS from 'react-native-fs';
 

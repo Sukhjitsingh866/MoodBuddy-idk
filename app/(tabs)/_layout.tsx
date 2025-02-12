@@ -34,7 +34,7 @@ export default function TabsLayout() {
       />
 
     <Tabs.Screen 
-    name = "chatbot" 
+    name = "ChatScreen" 
     options={{
       headerTitle: "Chatbot",
       tabBarLabel: "Chatbot",
@@ -46,7 +46,7 @@ export default function TabsLayout() {
       }}
       />
       
-    <Tabs.Screen 
+    <Tabs.Screen
     name = "journal" 
     options={{
       headerTitle: "Journal",

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Alert } from "react-native";
+import { Alert, StyleSheet } from "react-native";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
 import { getResponse, detectCrisis } from "./chatbot";
+import { View } from "react-native-web";
+
 
 const ChatBots = () => {
   const [messages, setMessages] = useState([]);
@@ -54,7 +56,9 @@ const ChatBots = () => {
   };
 
   return (
-    <GiftedChat
+
+    <GiftedChat 
+    listViewProps={{style: {backgroundColor: '#25292e'}}}
       messages={messages}
       onSend={(newMessages) => onSend(newMessages)}
       user={{ _id: 1 }}
@@ -68,6 +72,7 @@ const ChatBots = () => {
         />
       )}
     />
+
   );
 };
 

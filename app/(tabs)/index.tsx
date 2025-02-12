@@ -17,8 +17,6 @@ type Habit = {
 };
 
 export default function HomeScreen() {
-
-  
     const [habits, setHabits] = useState<Habit[]>([]);
     const [lastResetDate, setLastResetDate] = useState<string>(new Date().toDateString());
     const isFocused = useIsFocused(); // Track if the screen is focused
@@ -135,19 +133,16 @@ const styles = StyleSheet.create({
         color: '#888',
     },
     quoteText1: {
-        color: "black",
+        color: "white",
         fontSize:25,
         height:100,
     
-        borderRadius:50,
-    
-        backgroundColor: "#ffff00",
+
         alignContent:"center",
       },
       quoteText2: {
-        color: "black",
-        borderRadius:25,
-        backgroundColor: "#ffff00",
+        color: "white",
+
     
       },
 });
