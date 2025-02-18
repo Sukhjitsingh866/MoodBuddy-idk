@@ -1,30 +1,15 @@
 import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView } from "react-native";
-import React, { useState } from 'react';
-import DateTimePicker from '@react-native-community/datetimepicker'; // Replace react-datepicker
-import Jdata from '@/assets/journaldata.json';
-// import RNFS from 'react-native-fs';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {DatePickerInput} from 'react-native-paper-dates';
 
-const initialRecord = [
-  {
-    id: 1,
-    date: "1/1/2000",
-    Q1: "none",
-    Q2: "none",
-    userDesc: "none",
-  }
-];
-const dataTesttoJson = JSON.stringify(initialRecord);
-
-const testRecord = Jdata.JtestData;
-// var path = RNFS.DocumentDirectoryPath + '/quotes.json';
-
-// RNFS.writeFile(path, dataTesttoJson, 'utf8')
-//   .then((success) => {
-//     console.log('FILE WRITTEN!');
-//   })
-//   .catch((err) => {
-//     console.log(err.message);
-//   });
+type TestRecord = {
+  id: number;
+  date: string;
+  Q1: string;
+  Q2: string;
+  userDesc: string;
+};
 
 export default function Journal() {
   const [currentQues, setCurrentQues] = useState(0);
@@ -34,18 +19,17 @@ export default function Journal() {
   const [inputDate, setInputDate] = useState(false);
   const [UserType, setUserType] = useState(false);
   const [userInput, setUserInput] = useState("");
-  const [records, setRecords] = useState(testRecord);
+  const [records, setRecords] = useState<TestRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
+  
   const jQues = [
     {
       question: "How are you today?",
-      options: ["good", "bad", "neutral"],
+      options: ["fantastic","good", "neutral", "bad", "horrible"],
     },
     {
-      question: "From a scale from 1 (not fun) to 3 (fun), how much fun did you have today?",
-      options: ["1", "2", "3"],
+      question: "From a scale from 1 (not fun) to 5 (fun), how much fun did you have today?",
+      options: ["1", "2", "3","4","5"],
     },
   ];
 
@@ -60,19 +44,8 @@ export default function Journal() {
   };
 
   const handleComplete = () => {
-    const newRecord = {
-      id: records.length + 1,
-      date: selectedDate.toLocaleDateString(),
-      Q1: pickedOption[0],
-      Q2: pickedOption[1],
-      userDesc: userInput,
-    };
-    setRecords([...records, newRecord]);
+    addData();
     setFinishQues(true);
-  };
-
-  const handleDeleteRecord = (id) => {
-    setRecords(records.filter((record) => record.id !== id));
   };
 
   const handleRestart = () => {
@@ -85,34 +58,53 @@ export default function Journal() {
     setPickedOption([]);
   };
 
-  const handleDateChange = (event, date) => {
-    setShowDatePicker(false);
-    if (date) {
-      setSelectedDate(date);
-    }
+  const handleEnd = () => {
+    setFinishQues(true);
+    setUserType(true);
+    setStartQues(true);
+    setInputDate(true);
   };
 
-  const handleEnd=()=>{
-    setFinishQues(true)
-    setUserType(true)
-    setStartQues(true)
-    setInputDate(true)
-  }
-
-  const handleDatatoJSONfile=()=>{
-    fs.writeFile("journaldata.json", dataTesttoJson, (error) => {
-      // throwing the error
-      // in case of a writing problem
-      if (error) {
-        // logging the error
-        console.error(error);
-    
-        throw error;
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const storedData = await AsyncStorage.getItem('storedJson');
+        if (storedData !== null) {
+          setRecords(JSON.parse(storedData));
+        }
+      } catch (e) {
+        console.error('Failed to load data', e);
       }
-    
-      console.log("data.json written correctly");
-    });
-  }
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    const storeData = async () => {
+      try {
+        await AsyncStorage.setItem('storedJson', JSON.stringify(records));
+      } catch (e) {
+        console.error('Failed to save data', e);
+      }
+    };
+    storeData();
+  }, [records]);
+
+  const addData = () => {
+    const newRecord = {
+      id: records.length + 1,
+      date: selectedDate.toLocaleDateString(),
+      Q1: pickedOption[0],
+      Q2: pickedOption[1],
+      userDesc: userInput,
+    };
+    setRecords([...records, newRecord]);
+  };
+
+  const removeData = (id) => {
+    setRecords(records.filter((record) => record.id !== id));
+  };
+
   return (
     <View style={styles.container}>
       {finishQues ? (
@@ -125,7 +117,7 @@ export default function Journal() {
                 <Text style={styles.text}>
                   {item.date}: You felt {item.Q1} and rated it as {item.Q2} for fun. You typed: {item.userDesc}
                 </Text>
-                <TouchableOpacity onPress={() => handleDeleteRecord(item.id)} style={styles.deleteButton}>
+                <TouchableOpacity onPress={() => removeData(item.id)} style={styles.deleteButton}>
                   <Text>Delete</Text>
                 </TouchableOpacity>
               </View>
@@ -165,19 +157,7 @@ export default function Journal() {
                 <View style={styles.container}>
                   {inputDate ? (
                     <View>
-                      <Text style={styles.text}>Select a Date</Text>
-                      {showDatePicker && (
-                        <DateTimePicker
-                          value={selectedDate}
-                          mode="date"
-                          display="default"
-                          onChange={handleDateChange}
-                        />
-                      )}
-                      <Text style={styles.text}>Date: {selectedDate.toLocaleDateString()}</Text>
-                      <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.button}>
-                        <Text>Pick Date</Text>
-                      </TouchableOpacity>
+                      <DatePickerInput locale="en" label="Pick a date" value={selectedDate} onChange={(d)=>setSelectedDate(d)} inputMode="start" />
                       <TouchableOpacity onPress={() => setStartQues(true)} style={styles.button}>
                         <Text>Submit</Text>
                       </TouchableOpacity>
@@ -190,9 +170,6 @@ export default function Journal() {
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
                         <Text>Journal Entries</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDatatoJSONfile()} style={styles.button}>
-                        <Text>Enter into Json file</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -250,16 +227,19 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: "#DDDDDD",
+    backgroundColor: "white",
     padding: 10,
     margin: 10,
-    borderRadius: 5,
+    borderWidth: 4, 
+    borderColor: "#ffd33d", 
+    borderRadius: 18,
   },
   deleteButton: {
     backgroundColor: "red",
     padding: 10,
     margin: 5,
     borderRadius: 5,
+    
   },
   recordItem: {
     marginBottom: 10,

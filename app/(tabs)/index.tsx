@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native'; // Import the hook
 import data from "@/assets/quotes.json";
-
+import { Calendar } from 'react-native-calendars'; 
 
 const arrMin = 1
 const arrMax = data.quotes.length - 1
@@ -16,10 +16,15 @@ type Habit = {
     completed: boolean;
 };
 
+type MarkedDates = {
+    [date: string]: { selected: boolean; marked: boolean; selectedColor: string };
+};
+
 export default function HomeScreen() {
     const [habits, setHabits] = useState<Habit[]>([]);
     const [lastResetDate, setLastResetDate] = useState<string>(new Date().toDateString());
     const isFocused = useIsFocused(); // Track if the screen is focused
+    const [markedDates, setMarkedDates] = useState<MarkedDates>({});
 
     // Load habits and last reset date from AsyncStorage
     useEffect(() => {
@@ -27,11 +32,16 @@ export default function HomeScreen() {
             try {
                 const storedHabits = await AsyncStorage.getItem('@habits');
                 const storedDate = await AsyncStorage.getItem('@lastResetDate');
+                const storedMarkedDates = await AsyncStorage.getItem('@markedDates');
+
                 if (storedHabits !== null) {
                     setHabits(JSON.parse(storedHabits));
                 }
                 if (storedDate !== null) {
                     setLastResetDate(storedDate);
+                }
+                if (storedMarkedDates !== null) {
+                    setMarkedDates(JSON.parse(storedMarkedDates));
                 }
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -64,47 +74,77 @@ export default function HomeScreen() {
         updatedHabits[index].completed = !updatedHabits[index].completed;
         setHabits(updatedHabits);
         AsyncStorage.setItem('@habits', JSON.stringify(updatedHabits));
+
+        const allCompleted = updatedHabits.every((habit) => habit.completed);
+        const today = new Date().toISOString().split('T')[0];
+        const updatedMarkedDates = { ...markedDates };
+
+        if (allCompleted) {
+            updatedMarkedDates[today] = { selected: true, marked: true, selectedColor: 'green' };
+        } else {
+            updatedMarkedDates[today] = { selected: true, marked: true, selectedColor: 'red' };
+        }
+
+        setMarkedDates(updatedMarkedDates);
+        AsyncStorage.setItem('@markedDates', JSON.stringify(updatedMarkedDates));
     };
 
     return (
-      
-   
-    
+      <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.container}>
           <View style={styles.quotes}>
             <Text style = {styles.quoteText1}> {ranArray.quote} </Text>  
             <Text style = {styles.quoteText2}>by {ranArray.author} </Text>
           </View>
+
+          <Calendar
+                markedDates={markedDates} // Pass marked dates to the calendar
+                markingType="custom"
+                theme={{
+                    calendarBackground: 'transparent', 
+                    textSectionTitleColor: '#fff', // Month and year text color
+                    todayTextColor: '#fff', // Today's date text color
+                    selectedDayBackgroundColor: 'green', // Selected date background color
+                    arrowColor: '#fff', // Arrow color for month navigation
+                    monthTextColor: '#fff', // Month text color
+                    textDisabledColor: '#666', // Disabled date text color
+                }}
+            />
+            
             <Text style={styles.title}>Today's Habits</Text>
-            {habits.map((habit, index) => (
-                <Pressable
-                    key={index}
-                    onPress={() => toggleCompletion(index)}
-                    style={styles.habitItem}
-                >
-                    <Text
-                        style={[
-                            styles.habitText,
-                            habit.completed && styles.completedHabit,
-                        ]}
+            {habits.length === 0 ? (
+                <Text style={styles.noHabitsText}>Please add your habits in the Habit tab.</Text>
+            ) : (
+                habits.map((habit, index) => (
+                    <Pressable
+                        key={index}
+                        onPress={() => toggleCompletion(index)}
+                        style={styles.habitItem}
                     >
-                        {habit.name}
-                    </Text>
-                    {habit.completed && (
-                        <FontAwesome name="check" size={18} color="green" />
-                    )}
-                </Pressable>
-            ))}
+                        <Text
+                            style={[
+                                styles.habitText,
+                                habit.completed && styles.completedHabit,
+                            ]}
+                        >
+                            {habit.name}
+                        </Text>
+                        {habit.completed && (
+                            <FontAwesome name="check" size={18} color="green" />
+                        )}
+                    </Pressable>
+                ))
+            )}
         </View>
+      </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         padding: 20,
         backgroundColor: '#25292e',
-       
     },
     quotes: {
       justifyContent: "center",
@@ -142,7 +182,11 @@ const styles = StyleSheet.create({
       },
       quoteText2: {
         color: "white",
-
-    
       },
+      noHabitsText: {
+        fontSize: 16,
+        color: 'white',
+        textAlign: 'center',
+        marginTop: 20,
+    },
 });

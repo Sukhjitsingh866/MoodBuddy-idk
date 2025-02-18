@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Alert, StyleSheet } from "react-native";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
 import { getResponse, detectCrisis } from "./chatbot";
-import { View } from "react-native-web";
+
 
 
 const ChatBots = () => {

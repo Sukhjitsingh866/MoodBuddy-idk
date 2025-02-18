@@ -41,36 +41,35 @@ export const getResponse = async (message) => {
     return { type: "rule", response: ruleBasedResponses[normalizedMessage] };
   }
 
-  // AI fallback
-  return { type: "ai", response: await aiFallback(message) };
+  // AI fallback (Now using Google Gemini)
+  return { type: "ai", response: await aiGoogleGemini(message) };
 };
-
-// AI fallback function (ChatGPT API)
-const aiFallback = async (message) => {
+// AI fallback function using Google Gemini API
+const aiGoogleGemini = async (message) => {
   try {
     const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCbl2IXoemANZJwMgpobo18EsvXICALF6U", // Google Gemini API endpoint
       {
-        model: "gpt-3.5-turbo", // or 'gpt-4'
-        messages: [
+        contents: [
           {
-            role: "system",
-            content: "You are a mental health support chatbot. Provide empathetic and helpful responses."
-          },
-          { role: "user", content: message }
+            parts: [{ text: message }]
+          }
         ]
       },
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}` // Secure API key handling
         }
       }
     );
 
-    return response.data.choices[0].message.content;
+    // Extracting the response text
+    const aiResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    // Return the response or a fallback message if not found
+    return aiResponse || "Sorry, I couldn't process that. Can you try rephrasing?";
   } catch (error) {
-    console.error("AI Fallback Error:", error);
-    return "Sorry, I couldn't process that. Can you try rephrasing?";
+    console.error("Google Gemini Error:", error);
+    return "Sorry, something went wrong. Please try again later.";
   }
 };
