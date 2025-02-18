@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 
+
 interface BadgeProps {
   title: string;
   description: string;
   completed: boolean;
 }
+
 
 const Badge: React.FC<BadgeProps> = ({ title, description, completed }) => {
   return (
@@ -31,6 +33,7 @@ const Badge: React.FC<BadgeProps> = ({ title, description, completed }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   badgeContainer: {
@@ -69,5 +72,6 @@ const styles = StyleSheet.create({
     color: '#888',
   },
 });
+
 
 export default Badge;

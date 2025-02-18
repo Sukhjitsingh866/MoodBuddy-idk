@@ -1,4 +1,8 @@
 {
+  "streaks": {
+    "habit": 21,
+    "journal": 30
+  },
   "badges": [
     {
       "title": "First Habit",
