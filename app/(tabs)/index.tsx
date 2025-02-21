@@ -90,51 +90,56 @@ export default function HomeScreen() {
     };
 
     return (
-      <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.container}>
+          {/* Daily Quotes Section */}
           <View style={styles.quotes}>
-            <Text style = {styles.quoteText1}> {ranArray.quote} </Text>  
-            <Text style = {styles.quoteText2}>by {ranArray.author} </Text>
+            <Text style={styles.sectionHeader}>Daily Quotes</Text>
+            <Text style={styles.quoteText1}>{ranArray.quote}</Text>
+            <Text style={styles.quoteText2}>by {ranArray.author}</Text>
           </View>
-
+      
+          {/* Calendar Section */}
+          <Text style={styles.sectionHeader}>Calendar</Text>
           <Calendar
-                markedDates={markedDates} // Pass marked dates to the calendar
-                markingType="custom"
-                theme={{
-                    calendarBackground: 'transparent', 
-                    textSectionTitleColor: '#fff', // Month and year text color
-                    todayTextColor: '#fff', // Today's date text color
-                    selectedDayBackgroundColor: 'green', // Selected date background color
-                    arrowColor: '#fff', // Arrow color for month navigation
-                    monthTextColor: '#fff', // Month text color
-                    textDisabledColor: '#666', // Disabled date text color
-                }}
-            />
-            
-            <Text style={styles.title}>Today's Habits</Text>
-            {habits.length === 0 ? (
-                <Text style={styles.noHabitsText}>Please add your habits in the Habit tab.</Text>
-            ) : (
-                habits.map((habit, index) => (
-                    <Pressable
-                        key={index}
-                        onPress={() => toggleCompletion(index)}
-                        style={styles.habitItem}
-                    >
-                        <Text
-                            style={[
-                                styles.habitText,
-                                habit.completed && styles.completedHabit,
-                            ]}
-                        >
-                            {habit.name}
-                        </Text>
-                        {habit.completed && (
-                            <FontAwesome name="check" size={18} color="green" />
-                        )}
-                    </Pressable>
-                ))
-            )}
+            markedDates={markedDates}
+            markingType="custom"
+            theme={{
+              calendarBackground: 'transparent',
+              textSectionTitleColor: '#fff',
+              todayTextColor: '#fff',
+              selectedDayBackgroundColor: 'green',
+              arrowColor: '#fff',
+              monthTextColor: '#fff',
+              textDisabledColor: '#666',
+            }}
+          />
+      
+          {/* Habits Section */}
+          <Text style={styles.title}>Today's Habits</Text>
+          {habits.length === 0 ? (
+            <Text style={styles.noHabitsText}>Please add your habits in the Habit tab.</Text>
+          ) : (
+            habits.map((habit, index) => (
+              <Pressable
+                key={index}
+                onPress={() => toggleCompletion(index)}
+                style={styles.habitItem}
+              >
+                <Text
+                  style={[
+                    styles.habitText,
+                    habit.completed && styles.completedHabit,
+                  ]}
+                >
+                  {habit.name}
+                </Text>
+                {habit.completed && (
+                  <FontAwesome name="check" size={18} color="green" />
+                )}
+              </Pressable>
+            ))
+          )}
         </View>
       </ScrollView>
     );
@@ -142,51 +147,60 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        flexGrow: 1,
-        padding: 20,
-        backgroundColor: '#25292e',
+      flexGrow: 1,
+      padding: 20,
+      backgroundColor: '#25292e',
     },
     quotes: {
-      justifyContent: "center",
-      alignItems: "center",
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20, 
+    },
+    sectionHeader: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: 'white',
+      marginBottom: 10, 
+      marginTop: 20, 
+      textAlign: 'center', 
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: "white",
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 20,
+      color: 'white',
     },
     habitItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 10,
-        marginVertical: 5,
-        backgroundColor: '#fff',
-        borderRadius: 5,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 10,
+      marginVertical: 5,
+      backgroundColor: '#fff',
+      borderRadius: 5,
     },
     habitText: {
-        fontSize: 18,
+      fontSize: 18,
     },
     completedHabit: {
-        textDecorationLine: 'line-through',
-        color: '#888',
+      textDecorationLine: 'line-through',
+      color: '#888',
     },
     quoteText1: {
-        color: "white",
-        fontSize:25,
-        height:100,
-    
-
-        alignContent:"center",
-      },
-      quoteText2: {
-        color: "white",
-      },
-      noHabitsText: {
-        fontSize: 16,
-        color: 'white',
-        textAlign: 'center',
-        marginTop: 20,
+      color: 'white',
+      fontSize: 25,
+      height: 100,
+      alignContent: 'center',
+      textAlign: 'center', 
     },
-});
+    quoteText2: {
+      color: 'white',
+      textAlign: 'center', 
+    },
+    noHabitsText: {
+      fontSize: 16,
+      color: 'white',
+      textAlign: 'center',
+      marginTop: 20,
+    },
+  });
