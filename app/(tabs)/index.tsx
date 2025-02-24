@@ -96,7 +96,7 @@ export default function HomeScreen() {
             <Text style = {styles.quoteText1}> {ranArray.quote} </Text>  
             <Text style = {styles.quoteText2}>by {ranArray.author} </Text>
           </View>
-          <View style={styles.hr} />
+
           <Calendar
                 markedDates={markedDates} // Pass marked dates to the calendar
                 markingType="custom"
@@ -189,10 +189,4 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
     },
-    hr: {
-        height: 1, 
-        backgroundColor: '#fff', 
-        width: '90%', 
-        marginVertical: 10, 
-      },
 });
