@@ -1,7 +1,8 @@
-import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView } from "react-native";
+import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from "react-native";
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {DatePickerInput} from 'react-native-paper-dates';
+import {LineChart,BarChart,PieChart, ProgressChart, ContributionGraph,StackedBarChart } from 'react-native-chart-kit';
 
 type TestRecord = {
   id: number;
@@ -18,10 +19,13 @@ export default function Journal() {
   const [startQues, setStartQues] = useState(false);
   const [inputDate, setInputDate] = useState(false);
   const [UserType, setUserType] = useState(false);
+  const [StatsPage, setStatsPage] = useState(false);
   const [userInput, setUserInput] = useState("");
   const [records, setRecords] = useState<TestRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  
+  const [chartData, setChartData] = useState({labels: [],datasets: [{ data: [] }]});
+  const [chartData2, setChartData2] = useState({labels: [],datasets: [{ data: [] }]});
+
   const jQues = [
     {
       question: "How are you today?",
@@ -105,6 +109,65 @@ export default function Journal() {
     setRecords(records.filter((record) => record.id !== id));
   };
 
+  useEffect(() => {
+    const updateChartData = () => {
+      // Define the possible feelings
+      const feelings = ["fantastic", "good", "neutral", "bad", "horrible"];
+      
+      // Count occurrences of each feeling
+      const feelingCounts = feelings.map(feeling => 
+        records.filter(record => record.Q1 === feeling).length
+      );
+  
+      const newData = {
+        labels: feelings,
+        datasets: [{
+          data: feelingCounts
+        }]
+      };
+      setChartData(newData);
+    };
+    
+    if (records.length > 0) {
+      updateChartData();
+    } else {
+      // Default data if no records exist
+      setChartData({
+        labels: ["fantastic", "good", "neutral", "bad", "horrible"],
+        datasets: [{ data: [0, 0, 0, 0, 0] }]
+      });
+    }
+  }, [records]);
+  useEffect(() => {
+    const updateChartData = () => {
+      // Define the possible feelings
+      const funnumber = ["1", "2", "3","4","5"];
+      
+      // Count occurrences of each feeling
+      const funnumberCounts = funnumber.map(funnumber => 
+        records.filter(record => record.Q2 === funnumber).length
+      );
+  
+      const newData2 = {
+        labels: funnumber,
+        datasets: [{
+          data: funnumberCounts
+        }]
+      };
+      setChartData2(newData2);
+    };
+    
+    if (records.length > 0) {
+      updateChartData();
+    } else {
+      // Default data if no records exist
+      setChartData2({
+        labels: ["1", "2", "3","4","5"],
+        datasets: [{ data: [0, 0, 0, 0, 0] }]
+      });
+    }
+  }, [records]);
+
   return (
     <View style={styles.container}>
       {finishQues ? (
@@ -141,6 +204,9 @@ export default function Journal() {
               <TouchableOpacity onPress={handleComplete} style={styles.button}>
                 <Text>Enter</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => setUserType(false)} style={styles.button}>
+                <Text>Back</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.container}>
@@ -151,7 +217,10 @@ export default function Journal() {
                     <TouchableOpacity key={index} onPress={() => handleResponse(item)} style={styles.optionContainer}>
                       <Text style={styles.optionStyle}>{item}</Text>
                     </TouchableOpacity>
-                  ))}
+                  ))}             
+                  <TouchableOpacity onPress={() => setStartQues(false)} style={styles.button}>
+                    <Text>Back</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.container}>
@@ -161,26 +230,67 @@ export default function Journal() {
                       <TouchableOpacity onPress={() => setStartQues(true)} style={styles.button}>
                         <Text>Submit</Text>
                       </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setInputDate(false)} style={styles.button}>
+                        <Text>Back</Text>
+                      </TouchableOpacity>
                     </View>
                   ) : (
-                    <View>
-                      <Text style={styles.startText}>My Journal</Text>
-                      <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
-                        <Text>Start</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
-                        <Text>Journal Entries</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
+                      <View style={styles.container}>
+                      {StatsPage ? (
+                        <View><Text style={styles.text}>Overall rating of how you felt</Text>
+                        <BarChart
+                          data={chartData}
+                          width={500}
+                          height={220}
+                          chartConfig={{
+                            backgroundColor: '#1cc910',
+                            backgroundGradientFrom: '#eff3ff',
+                            backgroundGradientTo: '#efefef',
+                            decimalPlaces: 0,
+                            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                          }}
+                          
+                        /><Text style={styles.text}>Overall fun rating</Text>
+                        <BarChart
+                          data={chartData2}
+                          width={500}
+                          height={220}
+                          chartConfig={{
+                            backgroundColor: '#1cc910',
+                            backgroundGradientFrom: '#eff3ff',
+                            backgroundGradientTo: '#efefef',
+                            decimalPlaces: 0,
+                            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                          }}
+                        />
+                          <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
+                            <Text>Back</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ):(
+                      <View>
+                        <Text style={styles.startText}>My Journal</Text>
+                        <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
+                          <Text>Start</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
+                          <Text>Journal Entries</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
+                          <Text>My Stats</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
         </View>
-      )}
-    </View>
-  );
+        )}
+      </View>
+    );
 }
 
 const styles = StyleSheet.create({
