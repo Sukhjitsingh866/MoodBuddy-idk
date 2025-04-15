@@ -1,8 +1,9 @@
 import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from "react-native";
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {DatePickerInput} from 'react-native-paper-dates';
-import {BarChart } from 'react-native-chart-kit';
+import { DatePickerInput } from 'react-native-paper-dates';
+import { BarChart } from 'react-native-chart-kit';
+import { setupNotifications, scheduleJournalReminder } from "./NotificationService";
 
 type TestRecord = {
   id: number;
@@ -23,17 +24,17 @@ export default function Journal() {
   const [userInput, setUserInput] = useState("");
   const [records, setRecords] = useState<TestRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [chartData, setChartData] = useState({labels: [],datasets: [{ data: [] }]});
-  const [chartData2, setChartData2] = useState({labels: [],datasets: [{ data: [] }]});
+  const [chartData, setChartData] = useState({ labels: [], datasets: [{ data: [] }] });
+  const [chartData2, setChartData2] = useState({ labels: [], datasets: [{ data: [] }] });
 
   const jQues = [
     {
       question: "How are you today?",
-      options: ["fantastic","good", "neutral", "bad", "horrible"],
+      options: ["fantastic", "good", "neutral", "bad", "horrible"],
     },
     {
       question: "From a scale from 1 (not fun) to 5 (fun), how much fun did you have today?",
-      options: ["1", "2", "3","4","5"],
+      options: ["1", "2", "3", "4", "5"],
     },
   ];
 
@@ -70,7 +71,8 @@ export default function Journal() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
+    const init = async () => {
+      // Load stored journal entries
       try {
         const storedData = await AsyncStorage.getItem('storedJson');
         if (storedData !== null) {
@@ -79,8 +81,12 @@ export default function Journal() {
       } catch (e) {
         console.error('Failed to load data', e);
       }
+
+      // Setup notifications
+      await setupNotifications();
+      await scheduleJournalReminder();
     };
-    loadData();
+    init();
   }, []);
 
   useEffect(() => {
@@ -111,58 +117,45 @@ export default function Journal() {
 
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible feelings
       const feelings = ["fantastic", "good", "neutral", "bad", "horrible"];
-      
-      // Count occurrences of each feeling
       const feelingCounts = feelings.map(feeling => 
         records.filter(record => record.Q1 === feeling).length
       );
-  
       const newData = {
         labels: feelings,
-        datasets: [{
-          data: feelingCounts
-        }]
+        datasets: [{ data: feelingCounts }]
       };
       setChartData(newData);
     };
-    
+
     if (records.length > 0) {
       updateChartData();
     } else {
-      // Default data if no records exist
       setChartData({
         labels: ["fantastic", "good", "neutral", "bad", "horrible"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
       });
     }
   }, [records]);
+
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible feelings
-      const funnumber = ["1", "2", "3","4","5"];
-      
-      // Count occurrences of each feeling
+      const funnumber = ["1", "2", "3", "4", "5"];
       const funnumberCounts = funnumber.map(funnumber => 
         records.filter(record => record.Q2 === funnumber).length
       );
-  
       const newData2 = {
         labels: funnumber,
-        datasets: [{
-          data: funnumberCounts
-        }]
+        datasets: [{ data: funnumberCounts }]
       };
       setChartData2(newData2);
     };
-    
+
     if (records.length > 0) {
       updateChartData();
     } else {
-      // Default data if no records exist
       setChartData2({
-        labels: ["1", "2", "3","4","5"],
+        labels: ["1", "2", "3", "4", "5"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
       });
     }
@@ -235,81 +228,87 @@ export default function Journal() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                      <View style={styles.container}>
+                    <View style={styles.container}>
                       {StatsPage ? (
                         <View>
-                        <Text style={styles.text}>Overall rating of how you felt</Text>
-                        <BarChart
-                          data={chartData}
-                          width={500}
-                          height={220}
-                          chartConfig={{
-                            backgroundColor: '#25282d',
-                            backgroundGradientFrom: '#25282d',
-                            backgroundGradientTo: '#25282d',
-                            backgroundGradientFromOpacity: 0,
-                            backgroundGradientToOpacity: 0,
-                            decimalPlaces: 0,
-                            color: () => `rgba(0, 255, 0, 1)`,
-                            fillShadowGradient: '#00FF00',
-                            fillShadowGradientTo: '#00FF00',
-                            fillShadowGradientOpacity: 1, 
-                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, 
-                            propsForBackgroundLines: {
-                              strokeWidth: "0",
-                            },
-                          }}
-                        />
-                      <Text style={styles.text}>Overall fun rating</Text>
-                      <BarChart
-                        data={chartData2}
-                        width={500}
-                        height={220}
-                        chartConfig={{
-                          backgroundColor: '#25282d',
-                          backgroundGradientFrom: '#25282d',
-                          backgroundGradientTo: '#25282d',
-                          backgroundGradientFromOpacity: 0,
-                          backgroundGradientToOpacity: 0,
-                          decimalPlaces: 0,
-                          color: () => `rgba(0, 255, 0, 1)`,
-                          fillShadowGradient: '#00FF00',
-                          fillShadowGradientTo: '#00FF00',
-                          fillShadowGradientOpacity: 1, 
-                          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, 
-                          propsForBackgroundLines: {
-                            strokeWidth: "0",
-                          },
-                        }}
-                      />
+                          <Text style={styles.text}>Overall rating of how you felt</Text>
+                          <BarChart
+                            data={chartData}
+                            width={Dimensions.get('window').width - 40}
+                            height={220}
+                            yAxisLabel=""
+                            yAxisSuffix=""
+                            chartConfig={{
+                              backgroundColor: '#25282d',
+                              backgroundGradientFrom: '#25282d',
+                              backgroundGradientTo: '#25282d',
+                              decimalPlaces: 0,
+                              color: () => `rgba(0, 255, 0, 1)`,
+                              fillShadowGradient: '#00FF00',
+                              fillShadowGradientTo: '#00FF00',
+                              fillShadowGradientOpacity: 1,
+                              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                              propsForBackgroundLines: {
+                                strokeWidth: 0,
+                              },
+                              formatYLabel: (value) => Math.round(value).toString(),
+                              barPercentage: 1,
+                            }}
+                            fromZero={true}
+                          />
+                          <Text style={styles.text}>Overall fun rating</Text>
+                          <BarChart
+                            data={chartData2}
+                            width={Dimensions.get('window').width - 40}
+                            height={220}
+                            yAxisLabel=""
+                            yAxisSuffix=""
+                            chartConfig={{
+                              backgroundColor: '#25282d',
+                              backgroundGradientFrom: '#25282d',
+                              backgroundGradientTo: '#25282d',
+                              decimalPlaces: 0,
+                              color: () => `rgba(0, 255, 0, 1)`,
+                              fillShadowGradient: '#00FF00',
+                              fillShadowGradientTo: '#00FF00',
+                              fillShadowGradientOpacity: 1,
+                              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                              propsForBackgroundLines: {
+                                strokeWidth: 0,
+                              },
+                              formatYLabel: (value) => Math.round(value).toString(),
+                              barPercentage: 1,
+                            }}
+                            fromZero={true}
+                          />
                           <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
                             <Text>Back</Text>
                           </TouchableOpacity>
                         </View>
-                      ):(
-                      <View>
-                        <Text style={styles.startText}>My Journal</Text>
-                        <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
-                          <Text>Start</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
-                          <Text>Journal Entries</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
-                          <Text>My Stats</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+                      ) : (
+                        <View>
+                          <Text style={styles.startText}>My Journal</Text>
+                          <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
+                            <Text>Start</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
+                            <Text>Journal Entries</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
+                            <Text>My Stats</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
         </View>
-        )}
-      </View>
-    );
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -359,16 +358,16 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 10,
     margin: 10,
-    borderWidth: 4, 
-    borderColor: "#ffd33d", 
+    borderWidth: 4,
+    borderColor: "#ffd33d",
     borderRadius: 18,
+    width: 150,
   },
   deleteButton: {
     backgroundColor: "red",
     padding: 10,
     margin: 5,
     borderRadius: 5,
-    
   },
   recordItem: {
     marginBottom: 10,
