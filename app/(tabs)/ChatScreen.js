@@ -1,9 +1,14 @@
+// app/(tabs)/ChatScreen.tsx
 import React, { useState, useEffect } from "react";
 import { Alert, StyleSheet } from "react-native";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 import { getResponse, detectCrisis } from "./chatbot";
+import { ThemeContext } from '../utils/ThemeContext';
+import { themes } from '../utils/theme';
 
 const ChatBots = () => {
+  const { theme } = React.useContext(ThemeContext);
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
@@ -14,9 +19,9 @@ const ChatBots = () => {
         createdAt: new Date(),
         user: {
           _id: 2,
-          name: "Chatbot"
-        }
-      }
+          name: "Chatbot",
+        },
+      },
     ]);
   }, []);
 
@@ -47,8 +52,8 @@ const ChatBots = () => {
             _id: Math.random().toString(),
             text: botResponse.response,
             createdAt: new Date(),
-            user: { _id: 2, name: "Chatbot" }
-          }
+            user: { _id: 2, name: "Chatbot" },
+          },
         ])
       );
     } else {
@@ -61,31 +66,52 @@ const ChatBots = () => {
             createdAt: new Date(),
             user: {
               _id: 2,
-              name: botResponse.type === "crisis" ? "Crisis Support" : "Chatbot"
-            }
-          }
+              name: botResponse.type === "crisis" ? "Crisis Support" : "Chatbot",
+            },
+          },
         ])
       );
     }
   };
 
+  // Define gradient colors for light and dark themes
+  const gradientColors = theme === 'light'
+    ? ['#f5f7fa', '#e4e9f0', '#d9e1e8'] // Light theme gradient
+    : ['#1a1d21', '#2f3439', '#3d4450']; // Dark theme gradient
+
   return (
-    <GiftedChat 
-      listViewProps={{ style: { backgroundColor: '#25292e' } }}
-      messages={messages}
-      onSend={(newMessages) => onSend(newMessages)}
-      user={{ _id: 1 }}
-      renderBubble={(props) => (
-        <Bubble
-          {...props}
-          wrapperStyle={{
-            right: { backgroundColor: "#007AFF" },
-            left: { backgroundColor: "#E5E5EA" }
-          }}
-        />
-      )}
-    />
+    <LinearGradient colors={gradientColors} style={styles.gradient}>
+      <GiftedChat
+        messages={messages}
+        onSend={(newMessages) => onSend(newMessages)}
+        user={{ _id: 1 }}
+        renderBubble={(props) => (
+          <Bubble
+            {...props}
+            wrapperStyle={{
+              right: { backgroundColor: theme === 'light' ? '#007AFF' : '#1E90FF' }, // User messages: Blue, slightly lighter in dark mode
+              left: { backgroundColor: theme === 'light' ? '#E5E5EA' : '#33373d' }, // Bot messages: Light gray in light mode, darker in dark mode
+            }}
+            textStyle={{
+              right: { color: '#ffffff' }, // User message text: Always white for contrast
+              left: { color: themes[theme].text }, // Bot message text: Black in light mode, white in dark mode
+            }}
+            timeTextStyle={{
+              right: { color: '#ffffff' }, // User message time: White
+              left: { color: theme === 'light' ? '#666666' : '#D3D3D3' }, // Bot message time: Gray shades for contrast
+            }}
+          />
+        )}
+      />
+    </LinearGradient>
   );
 };
+
+const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+    width: '100%',
+  },
+});
 
 export default ChatBots;

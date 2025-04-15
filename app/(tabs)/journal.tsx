@@ -1,8 +1,12 @@
+// app/(tabs)/journal.tsx
 import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from "react-native";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {DatePickerInput} from 'react-native-paper-dates';
-import {BarChart } from 'react-native-chart-kit';
+import { DatePickerInput } from 'react-native-paper-dates';
+import { BarChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
+import { ThemeContext } from '../utils/ThemeContext';
+import { themes } from '../utils/theme';
 
 type TestRecord = {
   id: number;
@@ -13,6 +17,7 @@ type TestRecord = {
 };
 
 export default function Journal() {
+  const { theme } = useContext(ThemeContext);
   const [currentQues, setCurrentQues] = useState(0);
   const [pickedOption, setPickedOption] = useState([]);
   const [finishQues, setFinishQues] = useState(false);
@@ -23,17 +28,17 @@ export default function Journal() {
   const [userInput, setUserInput] = useState("");
   const [records, setRecords] = useState<TestRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [chartData, setChartData] = useState({labels: [],datasets: [{ data: [] }]});
-  const [chartData2, setChartData2] = useState({labels: [],datasets: [{ data: [] }]});
+  const [chartData, setChartData] = useState({ labels: [], datasets: [{ data: [] }] });
+  const [chartData2, setChartData2] = useState({ labels: [], datasets: [{ data: [] }] });
 
   const jQues = [
     {
       question: "How are you today?",
-      options: ["fantastic","good", "neutral", "bad", "horrible"],
+      options: ["fantastic", "good", "neutral", "bad", "horrible"],
     },
     {
       question: "From a scale from 1 (not fun) to 5 (fun), how much fun did you have today?",
-      options: ["1", "2", "3","4","5"],
+      options: ["1", "2", "3", "4", "5"],
     },
   ];
 
@@ -138,12 +143,13 @@ export default function Journal() {
       });
     }
   }, [records]);
+
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible feelings
-      const funnumber = ["1", "2", "3","4","5"];
+      // Define the possible fun numbers
+      const funnumber = ["1", "2", "3", "4", "5"];
       
-      // Count occurrences of each feeling
+      // Count occurrences of each fun number
       const funnumberCounts = funnumber.map(funnumber => 
         records.filter(record => record.Q2 === funnumber).length
       );
@@ -162,142 +168,160 @@ export default function Journal() {
     } else {
       // Default data if no records exist
       setChartData2({
-        labels: ["1", "2", "3","4","5"],
+        labels: ["1", "2", "3", "4", "5"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
       });
     }
   }, [records]);
 
+  // Define gradient colors for light and dark themes
+  const gradientColors = theme === 'light'
+    ? ['#f5f7fa', '#e4e9f0', '#d9e1e8'] // Light theme gradient
+    : ['#1a1d21', '#2f3439', '#3d4450']; // Dark theme gradient
+
   return (
-    <View style={styles.container}>
-      {finishQues ? (
-        <ScrollView>
-          <FlatList
-            data={records}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.recordItem}>
-                <Text style={styles.text}>
-                  {item.date}: You felt {item.Q1} and rated it as {item.Q2} for fun. You typed: {item.userDesc}
-                </Text>
-                <TouchableOpacity onPress={() => removeData(item.id)} style={styles.deleteButton}>
-                  <Text>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-          <TouchableOpacity onPress={handleRestart} style={styles.button}>
-            <Text>Restart</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      ) : (
-        <View style={styles.container}>
-          {UserType ? (
-            <View>
-              <Text style={styles.text}>What made you feel this way?</Text>
-              <TextInput
-                style={styles.userType}
-                onChangeText={setUserInput}
-                value={userInput}
-                multiline
-              />
-              <TouchableOpacity onPress={handleComplete} style={styles.button}>
-                <Text>Enter</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setUserType(false)} style={styles.button}>
-                <Text>Back</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.container}>
-              {startQues ? (
-                <View>
-                  <Text style={styles.questionContainer}>{jQues[currentQues]?.question}</Text>
-                  {jQues[currentQues]?.options.map((item, index) => (
-                    <TouchableOpacity key={index} onPress={() => handleResponse(item)} style={styles.optionContainer}>
-                      <Text style={styles.optionStyle}>{item}</Text>
-                    </TouchableOpacity>
-                  ))}             
-                  <TouchableOpacity onPress={() => setStartQues(false)} style={styles.button}>
-                    <Text>Back</Text>
+    <LinearGradient colors={gradientColors} style={styles.gradient}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {finishQues ? (
+          <View>
+            <FlatList
+              data={records}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.recordItem}>
+                  <Text style={[styles.text, { color: themes[theme].text }]}>
+                    {item.date}: You felt {item.Q1} and rated it as {item.Q2} for fun. You typed: {item.userDesc}
+                  </Text>
+                  <TouchableOpacity onPress={() => removeData(item.id)} style={[styles.deleteButton, { backgroundColor: '#F44336' }]}>
+                    <Text style={[styles.buttonText, { color: '#ffffff' }]}>Delete</Text>
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <View style={styles.container}>
-                  {inputDate ? (
-                    <View>
-                      <DatePickerInput locale="en" label="Pick a date" value={selectedDate} onChange={(d)=>setSelectedDate(d)} inputMode="start" />
-                      <TouchableOpacity onPress={() => setStartQues(true)} style={styles.button}>
-                        <Text>Submit</Text>
+              )}
+            />
+            <TouchableOpacity onPress={handleRestart} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Restart</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.innerContainer}>
+            {UserType ? (
+              <View>
+                <Text style={[styles.text, { color: themes[theme].text }]}>What made you feel this way?</Text>
+                <TextInput
+                  style={[styles.userType, { color: themes[theme].text, borderColor: themes[theme].text, backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)' }]}
+                  onChangeText={setUserInput}
+                  value={userInput}
+                  multiline
+                />
+                <TouchableOpacity onPress={handleComplete} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                  <Text style={[styles.buttonText, { color: themes[theme].text }]}>Enter</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setUserType(false)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                  <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.innerContainer}>
+                {startQues ? (
+                  <View>
+                    <Text style={[styles.questionContainer, { color: themes[theme].text }]}>{jQues[currentQues]?.question}</Text>
+                    {jQues[currentQues]?.options.map((item, index) => (
+                      <TouchableOpacity key={index} onPress={() => handleResponse(item)} style={[styles.optionContainer, { borderColor: themes[theme].text, backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)' }]}>
+                        <Text style={[styles.optionStyle, { color: themes[theme].text }]}>{item}</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setInputDate(false)} style={styles.button}>
-                        <Text>Back</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                      <View style={styles.container}>
-                      {StatsPage ? (
-                        <View>
-                        <Text style={styles.text}>Overall rating of how you felt</Text>
-                        <BarChart
-                          data={chartData}
-                          width={500}
-                          height={220}
-                          chartConfig={{
-                            backgroundColor: '#25282d',
-                            backgroundGradientFrom: '#25282d',
-                            backgroundGradientTo: '#25282d',
-                            backgroundGradientFromOpacity: 0,
-                            backgroundGradientToOpacity: 0,
-                            decimalPlaces: 0,
-                            color: () => `rgba(0, 255, 0, 1)`,
-                            fillShadowGradient: '#00FF00',
-                            fillShadowGradientTo: '#00FF00',
-                            fillShadowGradientOpacity: 1, 
-                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, 
-                            propsForBackgroundLines: {
-                              strokeWidth: "0",
-                            },
+                    ))}             
+                    <TouchableOpacity onPress={() => setStartQues(false)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                      <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.innerContainer}>
+                    {inputDate ? (
+                      <View>
+                        <DatePickerInput
+                          locale="en"
+                          label="Pick a date"
+                          value={selectedDate}
+                          onChange={(d) => setSelectedDate(d)}
+                          inputMode="start"
+                          style={[styles.datePicker, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', color: themes[theme].text }]}
+                          inputProps={{
+                            style: { color: themes[theme].text },
                           }}
                         />
-                      <Text style={styles.text}>Overall fun rating</Text>
-                      <BarChart
-                        data={chartData2}
-                        width={500}
-                        height={220}
-                        chartConfig={{
-                          backgroundColor: '#25282d',
-                          backgroundGradientFrom: '#25282d',
-                          backgroundGradientTo: '#25282d',
-                          backgroundGradientFromOpacity: 0,
-                          backgroundGradientToOpacity: 0,
-                          decimalPlaces: 0,
-                          color: () => `rgba(0, 255, 0, 1)`,
-                          fillShadowGradient: '#00FF00',
-                          fillShadowGradientTo: '#00FF00',
-                          fillShadowGradientOpacity: 1, 
-                          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, 
-                          propsForBackgroundLines: {
-                            strokeWidth: "0",
-                          },
-                        }}
-                      />
-                          <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
-                            <Text>Back</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ):(
-                      <View>
-                        <Text style={styles.startText}>My Journal</Text>
-                        <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
-                          <Text>Start</Text>
+                        <TouchableOpacity onPress={() => setStartQues(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Submit</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
-                          <Text>Journal Entries</Text>
+                        <TouchableOpacity onPress={() => setInputDate(false)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
-                          <Text>My Stats</Text>
-                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.innerContainer}>
+                        {StatsPage ? (
+                          <View>
+                            <Text style={[styles.text, { color: themes[theme].text }]}>Overall rating of how you felt</Text>
+                            <BarChart
+                              data={chartData}
+                              width={500}
+                              height={220}
+                              chartConfig={{
+                                backgroundColor: 'transparent',
+                                backgroundGradientFrom: 'transparent',
+                                backgroundGradientTo: 'transparent',
+                                backgroundGradientFromOpacity: 0,
+                                backgroundGradientToOpacity: 0,
+                                decimalPlaces: 0,
+                                color: () => theme === 'light' ? `rgba(0, 150, 0, 1)` : `rgba(0, 255, 0, 1)`, // Darker green in light mode, brighter in dark mode
+                                fillShadowGradient: theme === 'light' ? '#006400' : '#00FF00',
+                                fillShadowGradientTo: theme === 'light' ? '#006400' : '#00FF00',
+                                fillShadowGradientOpacity: 1,
+                                labelColor: () => themes[theme].text,
+                                propsForBackgroundLines: {
+                                  strokeWidth: "0",
+                                },
+                              }}
+                            />
+                            <Text style={[styles.text, { color: themes[theme].text }]}>Overall fun rating</Text>
+                            <BarChart
+                              data={chartData2}
+                              width={500}
+                              height={220}
+                              chartConfig={{
+                                backgroundColor: 'transparent',
+                                backgroundGradientFrom: 'transparent',
+                                backgroundGradientTo: 'transparent',
+                                backgroundGradientFromOpacity: 0,
+                                backgroundGradientToOpacity: 0,
+                                decimalPlaces: 0,
+                                color: () => theme === 'light' ? `rgba(0, 150, 0, 1)` : `rgba(0, 255, 0, 1)`,
+                                fillShadowGradient: theme === 'light' ? '#006400' : '#00FF00',
+                                fillShadowGradientTo: theme === 'light' ? '#006400' : '#00FF00',
+                                fillShadowGradientOpacity: 1,
+                                labelColor: () => themes[theme].text,
+                                propsForBackgroundLines: {
+                                  strokeWidth: "0",
+                                },
+                              }}
+                            />
+                            <TouchableOpacity onPress={() => setStatsPage(false)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <View>
+                            <Text style={[styles.startText, { color: themes[theme].text }]}>My Journal</Text>
+                            <TouchableOpacity onPress={() => setInputDate(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Start</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleEnd()} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Journal Entries</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setStatsPage(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>My Stats</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     )}
                   </View>
@@ -306,32 +330,35 @@ export default function Journal() {
             )}
           </View>
         )}
-        </View>
-        )}
-      </View>
-    );
+      </ScrollView>
+    </LinearGradient>
+  );
 }
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  innerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#25292e",
-    padding: 20,
   },
   text: {
-    color: "white",
     padding: 10,
   },
   startText: {
-    color: "white",
     fontSize: 32,
     padding: 10,
   },
   userType: {
-    color: "white",
-    borderColor: "white",
     borderWidth: 1,
     width: 300,
     height: 100,
@@ -339,38 +366,34 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   questionContainer: {
-    color: "white",
     padding: 10,
     margin: 10,
     borderRadius: 5,
   },
   optionContainer: {
-    borderColor: "white",
     borderWidth: 1,
     margin: 5,
     padding: 10,
     borderRadius: 5,
   },
-  optionStyle: {
-    color: "white",
-  },
+  optionStyle: {},
   button: {
     alignItems: "center",
-    backgroundColor: "white",
     padding: 10,
     margin: 10,
-    borderWidth: 4, 
-    borderColor: "#ffd33d", 
+    borderWidth: 4,
     borderRadius: 18,
   },
+  buttonText: {},
   deleteButton: {
-    backgroundColor: "red",
     padding: 10,
     margin: 5,
     borderRadius: 5,
-    
   },
   recordItem: {
     marginBottom: 10,
+  },
+  datePicker: {
+    marginVertical: 10,
   },
 });

@@ -7,18 +7,14 @@ import { useIsFocused } from '@react-navigation/native';
 import { ThemeContext } from '../utils/ThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { scheduleDailyReminder } from '../utils/notificationUtils';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Debounce helper function
 const debounce = (func, delay) => {
   let timeoutId;
-  console.log('Debounce function created with delay:', delay); // Log debounce creation
   return (...args) => {
-    console.log('Debounce triggered with args:', args); // Log debounce trigger
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      console.log('Debounce executing function after delay'); // Log debounce execution
-      func(...args);
-    }, delay);
+    timeoutId = setTimeout(() => func(...args), delay);
   };
 };
 
@@ -41,9 +37,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        console.log('Loading profile from AsyncStorage');
         const storedProfile = await AsyncStorage.getItem('@profile');
-        console.log('Stored profile:', storedProfile);
         if (storedProfile) {
           const parsedProfile = JSON.parse(storedProfile);
           setProfile({
@@ -56,7 +50,6 @@ export default function ProfileScreen() {
             name: 'Guest',
             bio: 'Tell us about yourself!',
           };
-          console.log('Setting default profile:', defaultProfile);
           await AsyncStorage.setItem(
             '@profile',
             JSON.stringify({ ...defaultProfile, theme, notifications: notificationsEnabled, notificationTime })
@@ -79,9 +72,7 @@ export default function ProfileScreen() {
 
   const onTimeChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS !== 'web') {
-      // Native platform (iOS/Android)
-      console.log('Native time picker changed:', selectedDate);
-      setShowTimePicker(Platform.OS === 'ios');
+      setShowTimePicker(Platform.OS === 'ios'); // Keep picker open on iOS until dismissed
       if (selectedDate) {
         const hour = selectedDate.getHours();
         const minute = selectedDate.getMinutes();
@@ -91,33 +82,24 @@ export default function ProfileScreen() {
   };
 
   const onWebTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Web time picker changed:', event.target.value);
     const [hour, minute] = event.target.value.split(':').map(Number);
     setTempNotificationTime({ hour, minute });
   };
 
   const saveProfile = useCallback(async () => {
-    console.log('saveProfile called');
     try {
-      console.log('Setting notification time:', tempNotificationTime);
       await setNotificationTime(tempNotificationTime);
-
-      console.log('Saving profile to AsyncStorage:', { ...profile, theme, notifications: notificationsEnabled, notificationTime: tempNotificationTime });
       const updatedProfile = { ...profile, theme, notifications: notificationsEnabled, notificationTime: tempNotificationTime };
       await AsyncStorage.setItem('@profile', JSON.stringify(updatedProfile));
-      console.log('Profile saved to AsyncStorage');
 
       if (notificationsEnabled) {
-        console.log('Scheduling notification from saveProfile with time:', tempNotificationTime);
         await scheduleDailyReminder(tempNotificationTime);
-        console.log('Notification scheduled');
         if (Platform.OS === 'web') {
           window.alert(`Success: Profile updated successfully! Daily reminders set for ${formatTime(tempNotificationTime)}.`);
         } else {
           Alert.alert('Success', `Profile updated successfully! Daily reminders set for ${formatTime(tempNotificationTime)}.`);
         }
       } else {
-        console.log('Notifications disabled, skipping scheduling');
         if (Platform.OS === 'web') {
           window.alert('Success: Profile updated successfully!');
         } else {
@@ -125,7 +107,6 @@ export default function ProfileScreen() {
         }
       }
 
-      console.log('Setting isEditing to false');
       setIsEditing(false);
     } catch (error) {
       console.error('Error in saveProfile:', error);
@@ -143,151 +124,168 @@ export default function ProfileScreen() {
   currentTime.setHours(tempNotificationTime.hour, tempNotificationTime.minute, 0);
 
   const handleSavePress = () => {
-    console.log('Save button pressed');
     debouncedSaveProfile();
   };
 
+  const gradientColors = theme === 'light'
+    ? ['#f5f7fa', '#e4e9f0', '#d9e1e8']
+    : ['#1a1d21', '#2f3439', '#3d4450'];
+
   return (
-    <ScrollView contentContainerStyle={[styles.container, theme === 'light' ? styles.lightTheme : styles.darkTheme]}>
-      <View style={styles.profileHeader}>
-        <Ionicons name="person-circle-outline" size={100} color={theme === 'light' ? '#FFD700' : '#FFD700'} />
-        <Text style={[styles.profileName, theme === 'light' ? styles.lightText : styles.darkText]}>
-          {profile.name}
-        </Text>
-      </View>
-
-      {isEditing ? (
-        <View style={styles.editContainer}>
-          <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Name</Text>
-          <TextInput
-            style={[styles.input, theme === 'light' ? styles.lightInput : styles.darkInput]}
-            value={profile.name}
-            onChangeText={(text) => setProfile({ ...profile, name: text })}
-            placeholder="Enter your name"
-            placeholderTextColor={theme === 'light' ? '#999' : '#D3D3D3'}
-          />
-
-          <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Bio</Text>
-          <TextInput
-            style={[styles.input, styles.bioInput, theme === 'light' ? styles.lightInput : styles.darkInput]}
-            value={profile.bio}
-            onChangeText={(text) => setProfile({ ...profile, bio: text })}
-            placeholder="Tell us about yourself"
-            placeholderTextColor={theme === 'light' ? '#999' : '#D3D3D3'}
-            multiline
-          />
-
-          <View style={styles.switchContainer}>
-            <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
-              Theme: {theme}
+    <View style={styles.container}>
+      <LinearGradient
+        colors={gradientColors}
+        style={StyleSheet.absoluteFill}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            theme === 'light' ? styles.lightTheme : styles.darkTheme,
+          ]}
+        >
+          <View style={styles.profileHeader}>
+            <Ionicons name="person-circle-outline" size={100} color={theme === 'light' ? '#FFC107' : '#FFD700'} />
+            <Text style={[styles.profileName, theme === 'light' ? styles.lightText : styles.darkText]}>
+              {profile.name}
             </Text>
-            <Switch
-              value={theme === 'dark'}
-              onValueChange={(value) => setTheme(value ? 'dark' : 'light')}
-              thumbColor={theme === 'dark' ? '#FFD700' : '#f4f3f4'}
-              trackColor={{ false: '#767577', true: '#4CAF50' }}
-            />
           </View>
 
-          <View style={styles.switchContainer}>
-            <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
-              Notifications
-            </Text>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={(value) => setNotificationsEnabled(value)}
-              thumbColor={notificationsEnabled ? '#FFD700' : '#f4f3f4'}
-              trackColor={{ false: '#767577', true: '#4CAF50' }}
-            />
-          </View>
+          {isEditing ? (
+            <View style={styles.editContainer}>
+              <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Name</Text>
+              <TextInput
+                style={[styles.input, theme === 'light' ? styles.lightInput : styles.darkInput]}
+                value={profile.name}
+                onChangeText={(text) => setProfile({ ...profile, name: text })}
+                placeholder="Enter your name"
+                placeholderTextColor={theme === 'light' ? '#999' : '#D3D3D3'}
+              />
 
-          {notificationsEnabled && (
-            <View style={styles.timePickerContainer}>
-              <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
-                Daily Reminder Time
-              </Text>
-              <Pressable onPress={() => Platform.OS !== 'web' && setShowTimePicker(true)}>
-                {Platform.OS === 'web' ? (
-                  <input
-                    type="time"
-                    value={`${tempNotificationTime.hour.toString().padStart(2, '0')}:${tempNotificationTime.minute.toString().padStart(2, '0')}`}
-                    onChange={onWebTimeChange}
-                    style={{
-                      fontSize: 16,
-                      padding: 10,
-                      borderWidth: 1,
-                      borderColor: '#FFD700',
-                      borderRadius: 8,
-                      color: theme === 'light' ? '#000000' : '#ffffff',
-                      backgroundColor: theme === 'light' ? '#f0f0f0' : '#33373d',
-                      cursor: 'pointer',
-                    }}
-                  />
-                ) : (
-                  <Text style={[styles.timeText, theme === 'light' ? styles.lightText : styles.darkText]}>
-                    {formatTime(tempNotificationTime)}
-                  </Text>
-                )}
-              </Pressable>
-              {Platform.OS !== 'web' && showTimePicker && (
-                <DateTimePicker
-                  value={currentTime}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
-                  onChange={onTimeChange}
+              <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Bio</Text>
+              <TextInput
+                style={[styles.input, styles.bioInput, theme === 'light' ? styles.lightInput : styles.darkInput]}
+                value={profile.bio}
+                onChangeText={(text) => setProfile({ ...profile, bio: text })}
+                placeholder="Tell us about yourself"
+                placeholderTextColor={theme === 'light' ? '#999' : '#D3D3D3'}
+                multiline
+              />
+
+              <View style={styles.switchContainer}>
+                <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
+                  Theme: {theme}
+                </Text>
+                <Switch
+                  value={theme === 'dark'}
+                  onValueChange={(value) => setTheme(value ? 'dark' : 'light')}
+                  thumbColor={theme === 'dark' ? '#FFD700' : '#f4f3f4'}
+                  trackColor={{ false: '#767577', true: '#66BB6A' }}
                 />
+              </View>
+
+              <View style={styles.switchContainer}>
+                <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
+                  Notifications
+                </Text>
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={(value) => setNotificationsEnabled(value)}
+                  thumbColor={notificationsEnabled ? '#FFC107' : '#f4f3f4'}
+                  trackColor={{ false: '#767577', true: '#66BB6A' }}
+                />
+              </View>
+
+              {notificationsEnabled && (
+                <View style={styles.timePickerContainer}>
+                  <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
+                    Daily Reminder Time
+                  </Text>
+                  <Pressable onPress={() => Platform.OS !== 'web' && setShowTimePicker(true)}>
+                    {Platform.OS === 'web' ? (
+                      <input
+                        type="time"
+                        value={`${tempNotificationTime.hour.toString().padStart(2, '0')}:${tempNotificationTime.minute.toString().padStart(2, '0')}`}
+                        onChange={onWebTimeChange}
+                        style={{
+                          fontSize: 16,
+                          padding: 10,
+                          borderWidth: 1,
+                          borderColor: '#B0BEC5',
+                          borderRadius: 8,
+                          color: theme === 'light' ? '#000000' : '#ffffff',
+                          backgroundColor: theme === 'light' ? '#ffffff' : '#33373d',
+                          cursor: 'pointer',
+                        }}
+                      />
+                    ) : (
+                      <Text style={[styles.timeText, theme === 'light' ? styles.lightText : styles.darkText]}>
+                        {formatTime(tempNotificationTime)}
+                      </Text>
+                    )}
+                  </Pressable>
+                  {Platform.OS !== 'web' && showTimePicker && (
+                    <DateTimePicker
+                      value={currentTime}
+                      mode="time"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
+                      onChange={onTimeChange}
+                      textColor={theme === 'light' ? '#000000' : '#ffffff'} // Ensure text is visible
+                      style={Platform.OS === 'android' ? styles.androidPicker : undefined} // Custom style for Android
+                      accentColor={theme === 'light' ? '#66BB6A' : '#FFD700'} // Highlight color for selection
+                    />
+                  )}
+                </View>
               )}
+
+              <View style={styles.buttonRow}>
+                <Pressable style={[styles.button, styles.cancelButton]} onPress={() => setIsEditing(false)}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.button, styles.saveButton]} onPress={handleSavePress}>
+                  <Text style={styles.buttonText}>Save</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.viewContainer}>
+              <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Bio</Text>
+              <Text style={[styles.infoText, theme === 'light' ? styles.lightText : styles.darkText]}>
+                {profile.bio || 'No bio yet.'}
+              </Text>
+
+              <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Theme</Text>
+              <Text style={[styles.infoText, theme === 'light' ? styles.lightText : styles.darkText]}>
+                {theme}
+              </Text>
+
+              <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
+                Notifications
+              </Text>
+              <Text style={[styles.infoText, theme === 'light' ? styles.lightText : styles.darkText]}>
+                {notificationsEnabled ? `Enabled (at ${formatTime(notificationTime)})` : 'Disabled'}
+              </Text>
+
+              <Pressable style={styles.editButton} onPress={() => setIsEditing(true)}>
+                <Text style={styles.buttonText}>Edit Profile</Text>
+              </Pressable>
             </View>
           )}
-
-          <View style={styles.buttonRow}>
-            <Pressable style={[styles.button, styles.cancelButton]} onPress={() => setIsEditing(false)}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </Pressable>
-            <Pressable style={[styles.button, styles.saveButton]} onPress={handleSavePress}>
-              <Text style={styles.buttonText}>Save</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.viewContainer}>
-          <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Bio</Text>
-          <Text style={[styles.infoText, theme === 'light' ? styles.lightText : styles.darkText]}>
-            {profile.bio || 'No bio yet.'}
-          </Text>
-
-          <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>Theme</Text>
-          <Text style={[styles.infoText, theme === 'light' ? styles.lightText : styles.darkText]}>
-            {theme}
-          </Text>
-
-          <Text style={[styles.label, theme === 'light' ? styles.lightText : styles.darkText]}>
-            Notifications
-          </Text>
-          <Text style={[styles.infoText, theme === 'light' ? styles.lightText : styles.darkText]}>
-            {notificationsEnabled ? `Enabled (at ${formatTime(notificationTime)})` : 'Disabled'}
-          </Text>
-
-          <Pressable style={styles.editButton} onPress={() => setIsEditing(true)}>
-            <Text style={styles.buttonText}>Edit Profile</Text>
-          </Pressable>
-        </View>
-      )}
-    </ScrollView>
+        </ScrollView>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
     padding: 20,
   },
-  lightTheme: {
-    backgroundColor: '#ffffff',
-  },
-  darkTheme: {
-    backgroundColor: '#25292e',
-  },
+  lightTheme: {},
+  darkTheme: {},
   profileHeader: {
     alignItems: 'center',
     marginBottom: 20,
@@ -319,14 +317,14 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#FFD700',
+    borderColor: '#B0BEC5',
     borderRadius: 8,
     padding: 10,
     marginBottom: 20,
     fontSize: 16,
   },
   lightInput: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#ffffff',
     color: '#000000',
   },
   darkInput: {
@@ -350,7 +348,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#FFD700',
+    borderColor: '#B0BEC5',
     borderRadius: 8,
   },
   buttonRow: {
@@ -365,13 +363,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   editButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#66BB6A',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#66BB6A',
   },
   cancelButton: {
     backgroundColor: '#F44336',
@@ -380,5 +378,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  androidPicker: {
+    backgroundColor: '#ffffff', // Ensure Android picker has a visible background in light mode
   },
 });

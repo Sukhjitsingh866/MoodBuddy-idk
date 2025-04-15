@@ -1,3 +1,4 @@
+// app/(tabs)/index.tsx
 import React, { useState, useEffect, Component } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +8,8 @@ import data from '@/assets/quotes.json';
 import { Calendar } from 'react-native-calendars';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { ThemeContext } from '../utils/ThemeContext';
+import { themes } from '../utils/theme';
 
 // Error Boundary Component
 class ErrorBoundary extends Component {
@@ -19,8 +22,8 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Something went wrong: {this.state.error?.toString()}</Text>
+        <View style={[styles.errorContainer, { backgroundColor: themes[this.context.theme].background }]}>
+          <Text style={[styles.errorText, { color: '#ff0000' }]}>Something went wrong: {this.state.error?.toString()}</Text>
           <Pressable style={styles.retryButton} onPress={() => this.setState({ hasError: false, error: null })}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </Pressable>
@@ -30,6 +33,8 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
+
+ErrorBoundary.contextType = ThemeContext;
 
 const arrMin = 0;
 const arrMax = data.quotes.length - 1;
@@ -57,6 +62,7 @@ const calculateStreak = (markedDates: MarkedDates): number => {
 };
 
 export default function HomeScreen() {
+  const { theme } = React.useContext(ThemeContext);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [lastResetDate, setLastResetDate] = useState<string>(new Date().toDateString());
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
@@ -144,46 +150,51 @@ export default function HomeScreen() {
     setStreak(calculateStreak(updatedMarkedDates));
   };
 
+  // Define gradient colors for light and dark themes
+  const gradientColors = theme === 'light'
+    ? ['#f5f7fa', '#e4e9f0', '#d9e1e8'] // Light theme gradient
+    : ['#1a1d21', '#2f3439', '#3d4450']; // Dark theme gradient
+
   console.log('Rendering HomeScreen with quote:', quote);
   return (
     <ErrorBoundary>
-      <LinearGradient colors={['#1a1d21', '#2f3439', '#3d4450']} style={styles.gradient}>
+      <LinearGradient colors={gradientColors} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.contentContainer}>
           <View style={styles.content}>
-            <View style={styles.quoteContainer}>
-              <FontAwesome name="lightbulb-o" size={24} color="#FFD700" style={styles.quoteIcon} />
-              <Text style={styles.quoteText}>"{quote.quote}"</Text>
-              <Text style={styles.authorText}>— {quote.author}</Text>
+            <View style={[styles.quoteContainer, { backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)', borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}>
+              <FontAwesome name="lightbulb-o" size={24} color={themes[theme].highlight} style={styles.quoteIcon} />
+              <Text style={[styles.quoteText, { color: themes[theme].text }]}>"{quote.quote}"</Text>
+              <Text style={[styles.authorText, { color: theme === 'light' ? '#666666' : '#D3D3D3' }]}>— {quote.author}</Text>
             </View>
-            <View style={styles.calendarContainer}>
+            <View style={[styles.calendarContainer, { backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)', borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 215, 0, 0.1)' }]}>
               <Calendar
                 markedDates={markedDates}
                 markingType="custom"
                 style={styles.calendar}
                 theme={{
                   calendarBackground: 'transparent',
-                  textSectionTitleColor: '#ffffff',
-                  todayTextColor: '#FFD700',
+                  textSectionTitleColor: themes[theme].text,
+                  todayTextColor: themes[theme].highlight,
                   selectedDayBackgroundColor: '#4CAF50',
-                  arrowColor: '#ffffff',
-                  monthTextColor: '#ffffff',
-                  textDisabledColor: 'rgba(255, 255, 255, 0.3)',
-                  dayTextColor: '#ffffff',
+                  arrowColor: themes[theme].text,
+                  monthTextColor: themes[theme].text,
+                  textDisabledColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
+                  dayTextColor: themes[theme].text,
                   textDayFontWeight: '400',
                   dotColor: '#4CAF50',
-                  markedDotColor: '#FFD700',
+                  markedDotColor: themes[theme].highlight,
                   dotSize: 6,
                   markedDotSize: 8,
                 }}
               />
             </View>
-            <View style={styles.streakContainer}>
+            <View style={[styles.streakContainer, { backgroundColor: theme === 'light' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)', borderColor: '#4CAF50' }]}>
               <FontAwesome name="fire" size={18} color="#4CAF50" style={styles.streakIcon} />
-              <Text style={styles.streakText}>Current Streak: {streak} days</Text>
+              <Text style={[styles.streakText, { color: '#4CAF50' }]}>Current Streak: {streak} days</Text>
             </View>
-            <Text style={styles.title}>Today's Habits</Text>
+            <Text style={[styles.title, { color: themes[theme].text }]}>Today's Habits</Text>
             {habits.length === 0 ? (
-              <Text style={styles.noHabitsText}>
+              <Text style={[styles.noHabitsText, { color: theme === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)' }]}>
                 Add habits in the Habit tab to get started!
               </Text>
             ) : (
@@ -195,12 +206,14 @@ export default function HomeScreen() {
                     styles.habitItem,
                     habit.completed && styles.habitItemCompleted,
                     pressed && styles.habitItemPressed,
+                    { backgroundColor: themes[theme].background },
                   ]}
                 >
                   <Text
                     style={[
                       styles.habitText,
                       habit.completed && styles.completedHabitText,
+                      { color: themes[theme].text },
                     ]}
                   >
                     {habit.name}
@@ -208,7 +221,7 @@ export default function HomeScreen() {
                   <FontAwesome
                     name={habit.completed ? 'check-circle' : 'circle-o'}
                     size={24}
-                    color={habit.completed ? '#4CAF50' : '#757575'}
+                    color={habit.completed ? '#4CAF50' : theme === 'light' ? '#666666' : '#757575'}
                   />
                 </Pressable>
               ))
@@ -225,10 +238,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#25292e',
   },
   errorText: {
-    color: '#ff0000',
     fontSize: 18,
     marginBottom: 20,
     textAlign: 'center',
@@ -246,10 +257,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#25292e',
   },
   loadingText: {
-    color: '#ffffff',
     fontSize: 18,
     marginTop: 10,
   },
@@ -266,10 +275,8 @@ const styles = StyleSheet.create({
   quoteContainer: {
     marginBottom: 25,
     padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
     boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)',
     elevation: 5,
     alignItems: 'center',
@@ -278,7 +285,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   quoteText: {
-    color: '#ffffff',
     fontSize: 26,
     fontWeight: '600',
     fontStyle: 'italic',
@@ -287,18 +293,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   authorText: {
-    color: '#D3D3D3',
     fontSize: 18,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   calendarContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 15,
     padding: 10,
     marginBottom: 25,
     borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.1)',
     boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)',
     elevation: 5,
   },
@@ -308,7 +311,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
     marginBottom: 20,
     letterSpacing: 1,
     textShadow: '0px 1px 2px rgba(0, 0, 0, 0.2)',
@@ -319,7 +321,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     marginVertical: 6,
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 2,
@@ -333,18 +334,15 @@ const styles = StyleSheet.create({
   },
   habitText: {
     fontSize: 20,
-    color: '#212121',
     flex: 1,
     fontWeight: '500',
   },
   completedHabitText: {
     textDecorationLine: 'line-through',
-    color: '#757575',
     opacity: 0.7,
   },
   noHabitsText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     marginTop: 20,
     fontStyle: 'italic',
@@ -352,10 +350,8 @@ const styles = StyleSheet.create({
   streakContainer: {
     marginBottom: 20,
     padding: 10,
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
     borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#4CAF50',
     boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)',
     elevation: 5,
     alignItems: 'center',
@@ -366,7 +362,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   streakText: {
-    color: '#4CAF50',
     fontSize: 22,
     fontWeight: '700',
   },
