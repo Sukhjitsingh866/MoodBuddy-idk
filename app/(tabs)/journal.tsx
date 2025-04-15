@@ -240,48 +240,55 @@ export default function Journal() {
                         <View>
                         <Text style={styles.text}>Overall rating of how you felt</Text>
                         <BarChart
-                          data={chartData}
-                          width={500}
-                          height={220}
-                          chartConfig={{
-                            backgroundColor: '#25282d',
-                            backgroundGradientFrom: '#25282d',
-                            backgroundGradientTo: '#25282d',
-                            backgroundGradientFromOpacity: 0,
-                            backgroundGradientToOpacity: 0,
-                            decimalPlaces: 0,
-                            color: () => `rgba(0, 255, 0, 1)`,
-                            fillShadowGradient: '#00FF00',
-                            fillShadowGradientTo: '#00FF00',
-                            fillShadowGradientOpacity: 1, 
-                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, 
-                            propsForBackgroundLines: {
-                              strokeWidth: "0",
-                            },
-                          }}
-                        />
-                      <Text style={styles.text}>Overall fun rating</Text>
-                      <BarChart
-                        data={chartData2}
-                        width={500}
-                        height={220}
-                        chartConfig={{
-                          backgroundColor: '#25282d',
-                          backgroundGradientFrom: '#25282d',
-                          backgroundGradientTo: '#25282d',
-                          backgroundGradientFromOpacity: 0,
-                          backgroundGradientToOpacity: 0,
-                          decimalPlaces: 0,
-                          color: () => `rgba(0, 255, 0, 1)`,
-                          fillShadowGradient: '#00FF00',
-                          fillShadowGradientTo: '#00FF00',
-                          fillShadowGradientOpacity: 1, 
-                          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, 
-                          propsForBackgroundLines: {
-                            strokeWidth: "0",
-                          },
-                        }}
-                      />
+                            data={chartData}
+                            width={Dimensions.get('window').width - 40} 
+                            height={220}
+                            yAxisLabel="" 
+                            yAxisSuffix="" 
+                            chartConfig={{
+                              backgroundColor: '#25282d',
+                              backgroundGradientFrom: '#25282d',
+                              backgroundGradientTo: '#25282d',
+                              decimalPlaces: 0, 
+                              color: () => `rgba(0, 255, 0, 1)`,
+                              fillShadowGradient: '#00FF00',
+                              fillShadowGradientTo: '#00FF00',
+                              fillShadowGradientOpacity: 1,
+                              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                              propsForBackgroundLines: {
+                                strokeWidth: 0,
+                              },
+                              formatYLabel: (value) => Math.round(value).toString(), 
+                              barPercentage: 1, 
+                            }}
+                            fromZero={true} 
+
+                          />
+                          <Text style={styles.text}>Overall fun rating</Text>
+                          <BarChart
+                            data={chartData2}
+                            width={Dimensions.get('window').width - 40}
+                            height={220}
+                            yAxisLabel=""
+                            yAxisSuffix=""
+                            chartConfig={{
+                              backgroundColor: '#25282d',
+                              backgroundGradientFrom: '#25282d',
+                              backgroundGradientTo: '#25282d',
+                              decimalPlaces: 0,
+                              color: () => `rgba(0, 255, 0, 1)`,
+                              fillShadowGradient: '#00FF00',
+                              fillShadowGradientTo: '#00FF00',
+                              fillShadowGradientOpacity: 1,
+                              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                              propsForBackgroundLines: {
+                                strokeWidth: 0,
+                              },
+                              formatYLabel: (value) => Math.round(value).toString(), 
+                              barPercentage: 1,
+                            }}
+                            fromZero={true}
+                          />
                           <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
                             <Text>Back</Text>
                           </TouchableOpacity>
@@ -362,6 +369,7 @@ const styles = StyleSheet.create({
     borderWidth: 4, 
     borderColor: "#ffd33d", 
     borderRadius: 18,
+    width: 150,
   },
   deleteButton: {
     backgroundColor: "red",
