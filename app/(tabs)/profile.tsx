@@ -11,9 +11,14 @@ import { scheduleDailyReminder } from '../utils/notificationUtils';
 // Debounce helper function
 const debounce = (func, delay) => {
   let timeoutId;
+  console.log('Debounce function created with delay:', delay); // Log debounce creation
   return (...args) => {
+    console.log('Debounce triggered with args:', args); // Log debounce trigger
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
+    timeoutId = setTimeout(() => {
+      console.log('Debounce executing function after delay'); // Log debounce execution
+      func(...args);
+    }, delay);
   };
 };
 
@@ -36,7 +41,9 @@ export default function ProfileScreen() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
+        console.log('Loading profile from AsyncStorage');
         const storedProfile = await AsyncStorage.getItem('@profile');
+        console.log('Stored profile:', storedProfile);
         if (storedProfile) {
           const parsedProfile = JSON.parse(storedProfile);
           setProfile({
@@ -49,6 +56,7 @@ export default function ProfileScreen() {
             name: 'Guest',
             bio: 'Tell us about yourself!',
           };
+          console.log('Setting default profile:', defaultProfile);
           await AsyncStorage.setItem(
             '@profile',
             JSON.stringify({ ...defaultProfile, theme, notifications: notificationsEnabled, notificationTime })
@@ -72,6 +80,7 @@ export default function ProfileScreen() {
   const onTimeChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS !== 'web') {
       // Native platform (iOS/Android)
+      console.log('Native time picker changed:', selectedDate);
       setShowTimePicker(Platform.OS === 'ios');
       if (selectedDate) {
         const hour = selectedDate.getHours();
@@ -82,6 +91,7 @@ export default function ProfileScreen() {
   };
 
   const onWebTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Web time picker changed:', event.target.value);
     const [hour, minute] = event.target.value.split(':').map(Number);
     setTempNotificationTime({ hour, minute });
   };
@@ -89,23 +99,41 @@ export default function ProfileScreen() {
   const saveProfile = useCallback(async () => {
     console.log('saveProfile called');
     try {
+      console.log('Setting notification time:', tempNotificationTime);
       await setNotificationTime(tempNotificationTime);
 
+      console.log('Saving profile to AsyncStorage:', { ...profile, theme, notifications: notificationsEnabled, notificationTime: tempNotificationTime });
       const updatedProfile = { ...profile, theme, notifications: notificationsEnabled, notificationTime: tempNotificationTime };
       await AsyncStorage.setItem('@profile', JSON.stringify(updatedProfile));
+      console.log('Profile saved to AsyncStorage');
 
       if (notificationsEnabled) {
         console.log('Scheduling notification from saveProfile with time:', tempNotificationTime);
         await scheduleDailyReminder(tempNotificationTime);
-        Alert.alert('Success', `Profile updated successfully! Daily reminders set for ${formatTime(tempNotificationTime)}.`);
+        console.log('Notification scheduled');
+        if (Platform.OS === 'web') {
+          window.alert(`Success: Profile updated successfully! Daily reminders set for ${formatTime(tempNotificationTime)}.`);
+        } else {
+          Alert.alert('Success', `Profile updated successfully! Daily reminders set for ${formatTime(tempNotificationTime)}.`);
+        }
       } else {
-        Alert.alert('Success', 'Profile updated successfully!');
+        console.log('Notifications disabled, skipping scheduling');
+        if (Platform.OS === 'web') {
+          window.alert('Success: Profile updated successfully!');
+        } else {
+          Alert.alert('Success', 'Profile updated successfully!');
+        }
       }
 
+      console.log('Setting isEditing to false');
       setIsEditing(false);
     } catch (error) {
-      console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      console.error('Error in saveProfile:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Error: Failed to save profile. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to save profile. Please try again.');
+      }
     }
   }, [tempNotificationTime, profile, theme, notificationsEnabled, setNotificationTime, setIsEditing]);
 
@@ -113,6 +141,11 @@ export default function ProfileScreen() {
 
   const currentTime = new Date();
   currentTime.setHours(tempNotificationTime.hour, tempNotificationTime.minute, 0);
+
+  const handleSavePress = () => {
+    console.log('Save button pressed');
+    debouncedSaveProfile();
+  };
 
   return (
     <ScrollView contentContainerStyle={[styles.container, theme === 'light' ? styles.lightTheme : styles.darkTheme]}>
@@ -211,7 +244,7 @@ export default function ProfileScreen() {
             <Pressable style={[styles.button, styles.cancelButton]} onPress={() => setIsEditing(false)}>
               <Text style={styles.buttonText}>Cancel</Text>
             </Pressable>
-            <Pressable style={[styles.button, styles.saveButton]} onPress={debouncedSaveProfile}>
+            <Pressable style={[styles.button, styles.saveButton]} onPress={handleSavePress}>
               <Text style={styles.buttonText}>Save</Text>
             </Pressable>
           </View>

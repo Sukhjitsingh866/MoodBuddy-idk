@@ -15,50 +15,75 @@ let notificationTimeout: NodeJS.Timeout | null = null; // Track the timeout
 export async function setupNotifications() {
   console.log('Setting up notifications...');
 
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  console.log('Cleared all scheduled notifications at startup');
+  if (Platform.OS !== 'web') {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log('Cleared all scheduled notifications at startup (native)');
+  } else {
+    console.log('Skipping notification clearing on web (not supported)');
+  }
 
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+  if (Platform.OS !== 'web') {
+    // Native platform (iOS/Android)
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
 
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    console.log('Current notification permissions:', existingStatus);
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log('Current notification permissions:', existingStatus);
 
-    let finalStatus = existingStatus;
+      let finalStatus = existingStatus;
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-      console.log('Requested notification permissions, new status:', finalStatus);
-    }
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+        console.log('Requested notification permissions, new status:', finalStatus);
+      }
 
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get notification permissions!');
+      if (finalStatus !== 'granted') {
+        console.log('Failed to get notification permissions!');
+        return null;
+      }
+
+      console.log('Skipping push token generation (no projectId available). Local notifications may still work in the foreground.');
+    } else {
+      console.log('Must use physical device for Push Notifications');
       return null;
     }
 
-    console.log('Skipping push token generation (no projectId available). Local notifications may still work in the foreground.');
-    return true;
+    if (Platform.OS === 'android') {
+      console.log('Setting up Android notification channel');
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
   } else {
-    console.log('Must use physical device for Push Notifications');
-    return null;
+    // Web platform
+    console.log('Running on web, requesting notification permissions...');
+    if (!("Notification" in window)) {
+      console.log('Web Notifications API not supported in this browser');
+      return null;
+    }
+
+    if (Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      console.log('Web notification permission:', permission);
+      if (permission !== 'granted') {
+        console.log('Failed to get web notification permissions');
+        return null;
+      }
+    }
   }
 
-  if (Platform.OS === 'android') {
-    console.log('Setting up Android notification channel');
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
+  console.log('setupNotifications completed');
+  return true;
 }
 
 export async function scheduleDailyReminder(time: { hour: number; minute: number }) {
@@ -66,12 +91,17 @@ export async function scheduleDailyReminder(time: { hour: number; minute: number
 
   // Clear any existing timeout
   if (notificationTimeout) {
+    console.log('Clearing existing notification timeout');
     clearTimeout(notificationTimeout);
     notificationTimeout = null;
   }
 
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  console.log('Cleared all previous scheduled notifications');
+  if (Platform.OS !== 'web') {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log('Cleared all previous scheduled notifications (native)');
+  } else {
+    console.log('Skipping notification clearing on web (not supported)');
+  }
 
   const now = new Date();
   const currentHour = now.getHours();
@@ -99,16 +129,33 @@ export async function scheduleDailyReminder(time: { hour: number; minute: number
     notificationTimeout = setTimeout(async () => {
       notificationFireCount += 1;
       console.log(`Notification fired (${notificationFireCount} total) at:`, new Date().toLocaleString());
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "MoodBuddy Reminder 🌟",
-          body: "Don't forget to check in with MoodBuddy today!",
-          data: { screen: 'journal' },
-        },
-        trigger: {
-          seconds: 1, // Minimal delay to ensure it fires immediately after the timeout
-        },
-      });
+
+      if (Platform.OS !== 'web') {
+        // Native platform (iOS/Android)
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "MoodBuddy Reminder 🌟",
+            body: "Don't forget to check in with MoodBuddy today!",
+            data: { screen: 'journal' },
+          },
+          trigger: {
+            seconds: 1, // Minimal delay to ensure it fires immediately after the timeout
+          },
+        });
+      } else {
+        // Web platform
+        if (Notification.permission === 'granted') {
+          new Notification("MoodBuddy Reminder 🌟", {
+            body: "Don't forget to check in with MoodBuddy today!",
+            icon: '/assets/images/icon.png', // Adjust path to your app's icon
+            data: { screen: 'journal' },
+          });
+        } else {
+          console.log('Web notifications not permitted, showing alert instead');
+          alert("MoodBuddy Reminder 🌟: Don't forget to check in with MoodBuddy today!");
+        }
+      }
+
       console.log(`Successfully displayed reminder for ${nextNotification.toLocaleString()}`);
 
       // Trigger rescheduling after the notification fires
@@ -136,13 +183,17 @@ export async function scheduleDailyReminder(time: { hour: number; minute: number
       } else {
         console.log('No notification time available, cannot reschedule');
       }
+      console.log('scheduleDailyReminder timeout callback completed');
     }, millisecondsUntilNotification);
 
     console.log(`Scheduled one-time reminder for ${nextNotification.toLocaleString()} (in ${secondsUntilNotification} seconds)`);
     currentNotificationTime = time;
   } catch (error) {
-    console.error('Error scheduling notification:', error);
+    console.error('Error in scheduleDailyReminder:', error);
+    throw error; // Re-throw to be caught in saveProfile
   }
+
+  console.log('scheduleDailyReminder completed');
 }
 
 export function setupNotificationRescheduling() {
@@ -176,8 +227,10 @@ export function clearNotificationRescheduling() {
     reschedulingListener = null;
   }
   if (notificationTimeout) {
+    console.log('Clearing notification timeout');
     clearTimeout(notificationTimeout);
     notificationTimeout = null;
   }
   currentNotificationTime = null;
+  console.log('clearNotificationRescheduling completed');
 }
