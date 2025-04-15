@@ -1,8 +1,9 @@
 import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from "react-native";
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {DatePickerInput} from 'react-native-paper-dates';
-import {BarChart } from 'react-native-chart-kit';
+import { DatePickerInput } from 'react-native-paper-dates';
+import { BarChart } from 'react-native-chart-kit';
+import { useRouter } from "expo-router";
 
 type TestRecord = {
   id: number;
@@ -10,6 +11,7 @@ type TestRecord = {
   Q1: string;
   Q2: string;
   userDesc: string;
+  username: string;
 };
 
 export default function Journal() {
@@ -23,17 +25,19 @@ export default function Journal() {
   const [userInput, setUserInput] = useState("");
   const [records, setRecords] = useState<TestRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [chartData, setChartData] = useState({labels: [],datasets: [{ data: [] }]});
-  const [chartData2, setChartData2] = useState({labels: [],datasets: [{ data: [] }]});
+  const [chartData, setChartData] = useState({ labels: [], datasets: [{ data: [] }] });
+  const [chartData2, setChartData2] = useState({ labels: [], datasets: [{ data: [] }] });
+  const [currentUsername, setCurrentUsername] = useState("");
+  const router = useRouter();
 
   const jQues = [
     {
       question: "How are you today?",
-      options: ["fantastic","good", "neutral", "bad", "horrible"],
+      options: ["fantastic", "good", "neutral", "bad", "horrible"],
     },
     {
       question: "From a scale from 1 (not fun) to 5 (fun), how much fun did you have today?",
-      options: ["1", "2", "3","4","5"],
+      options: ["1", "2", "3", "4", "5"],
     },
   ];
 
@@ -72,9 +76,18 @@ export default function Journal() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Load current user
+        const username = await AsyncStorage.getItem("currentUser");
+        if (username) {
+          setCurrentUsername(username);
+        }
+
+        // Load journal entries
         const storedData = await AsyncStorage.getItem('storedJson');
         if (storedData !== null) {
-          setRecords(JSON.parse(storedData));
+          const allRecords = JSON.parse(storedData);
+          // Filter records for current user
+          setRecords(allRecords.filter(record => record.username === username));
         }
       } catch (e) {
         console.error('Failed to load data', e);
@@ -86,13 +99,20 @@ export default function Journal() {
   useEffect(() => {
     const storeData = async () => {
       try {
-        await AsyncStorage.setItem('storedJson', JSON.stringify(records));
+        // Load all records to preserve other users' data
+        const storedData = await AsyncStorage.getItem('storedJson');
+        const allRecords = storedData ? JSON.parse(storedData) : [];
+        // Update only current user's records
+        const otherRecords = allRecords.filter(record => record.username !== currentUsername);
+        await AsyncStorage.setItem('storedJson', JSON.stringify([...otherRecords, ...records]));
       } catch (e) {
         console.error('Failed to save data', e);
       }
     };
-    storeData();
-  }, [records]);
+    if (currentUsername) {
+      storeData();
+    }
+  }, [records, currentUsername]);
 
   const addData = () => {
     const newRecord = {
@@ -101,6 +121,7 @@ export default function Journal() {
       Q1: pickedOption[0],
       Q2: pickedOption[1],
       userDesc: userInput,
+      username: currentUsername,
     };
     setRecords([...records, newRecord]);
   };
@@ -111,58 +132,45 @@ export default function Journal() {
 
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible feelings
       const feelings = ["fantastic", "good", "neutral", "bad", "horrible"];
-      
-      // Count occurrences of each feeling
       const feelingCounts = feelings.map(feeling => 
         records.filter(record => record.Q1 === feeling).length
       );
-  
       const newData = {
         labels: feelings,
-        datasets: [{
-          data: feelingCounts
-        }]
+        datasets: [{ data: feelingCounts }]
       };
       setChartData(newData);
     };
-    
+
     if (records.length > 0) {
       updateChartData();
     } else {
-      // Default data if no records exist
       setChartData({
         labels: ["fantastic", "good", "neutral", "bad", "horrible"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
       });
     }
   }, [records]);
+
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible feelings
-      const funnumber = ["1", "2", "3","4","5"];
-      
-      // Count occurrences of each feeling
+      const funnumber = ["1", "2", "3", "4", "5"];
       const funnumberCounts = funnumber.map(funnumber => 
         records.filter(record => record.Q2 === funnumber).length
       );
-  
       const newData2 = {
         labels: funnumber,
-        datasets: [{
-          data: funnumberCounts
-        }]
+        datasets: [{ data: funnumberCounts }]
       };
       setChartData2(newData2);
     };
-    
+
     if (records.length > 0) {
       updateChartData();
     } else {
-      // Default data if no records exist
       setChartData2({
-        labels: ["1", "2", "3","4","5"],
+        labels: ["1", "2", "3", "4", "5"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
       });
     }
@@ -217,7 +225,7 @@ export default function Journal() {
                     <TouchableOpacity key={index} onPress={() => handleResponse(item)} style={styles.optionContainer}>
                       <Text style={styles.optionStyle}>{item}</Text>
                     </TouchableOpacity>
-                  ))}             
+                  ))}
                   <TouchableOpacity onPress={() => setStartQues(false)} style={styles.button}>
                     <Text>Back</Text>
                   </TouchableOpacity>
@@ -235,21 +243,21 @@ export default function Journal() {
                       </TouchableOpacity>
                     </View>
                   ) : (
-                      <View style={styles.container}>
+                    <View style={styles.container}>
                       {StatsPage ? (
                         <View>
-                        <Text style={styles.text}>Overall rating of how you felt</Text>
-                        <BarChart
+                          <Text style={styles.text}>Overall rating of how you felt</Text>
+                          <BarChart
                             data={chartData}
-                            width={Dimensions.get('window').width - 40} 
+                            width={Dimensions.get('window').width - 40}
                             height={220}
-                            yAxisLabel="" 
-                            yAxisSuffix="" 
+                            yAxisLabel=""
+                            yAxisSuffix=""
                             chartConfig={{
                               backgroundColor: '#25282d',
                               backgroundGradientFrom: '#25282d',
                               backgroundGradientTo: '#25282d',
-                              decimalPlaces: 0, 
+                              decimalPlaces: 0,
                               color: () => `rgba(0, 255, 0, 1)`,
                               fillShadowGradient: '#00FF00',
                               fillShadowGradientTo: '#00FF00',
@@ -258,11 +266,10 @@ export default function Journal() {
                               propsForBackgroundLines: {
                                 strokeWidth: 0,
                               },
-                              formatYLabel: (value) => Math.round(value).toString(), 
-                              barPercentage: 1, 
+                              formatYLabel: (value) => Math.round(value).toString(),
+                              barPercentage: 1,
                             }}
-                            fromZero={true} 
-
+                            fromZero={true}
                           />
                           <Text style={styles.text}>Overall fun rating</Text>
                           <BarChart
@@ -284,7 +291,7 @@ export default function Journal() {
                               propsForBackgroundLines: {
                                 strokeWidth: 0,
                               },
-                              formatYLabel: (value) => Math.round(value).toString(), 
+                              formatYLabel: (value) => Math.round(value).toString(),
                               barPercentage: 1,
                             }}
                             fromZero={true}
@@ -293,30 +300,39 @@ export default function Journal() {
                             <Text>Back</Text>
                           </TouchableOpacity>
                         </View>
-                      ):(
-                      <View>
-                        <Text style={styles.startText}>My Journal</Text>
-                        <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
-                          <Text>Start</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
-                          <Text>Journal Entries</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
-                          <Text>My Stats</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+                      ) : (
+                        <View>
+                          <Text style={styles.startText}>My Journal</Text>
+                          <TouchableOpacity onPress={() => setInputDate(true)} style={styles.button}>
+                            <Text>Start</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
+                            <Text>Journal Entries</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
+                            <Text>My Stats</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.button}
+                            onPress={async () => {
+                              await AsyncStorage.removeItem("currentUser");
+                              router.replace("/(auth)/Login");
+                            }}
+                          >
+                            <Text>Logout</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
         </View>
-        )}
-      </View>
-    );
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -366,8 +382,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     padding: 10,
     margin: 10,
-    borderWidth: 4, 
-    borderColor: "#ffd33d", 
+    borderWidth: 4,
+    borderColor: "#ffd33d",
     borderRadius: 18,
     width: 150,
   },
@@ -376,7 +392,6 @@ const styles = StyleSheet.create({
     padding: 10,
     margin: 5,
     borderRadius: 5,
-    
   },
   recordItem: {
     marginBottom: 10,
