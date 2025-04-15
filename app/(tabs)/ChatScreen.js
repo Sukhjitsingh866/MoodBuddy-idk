@@ -3,8 +3,6 @@ import { Alert, StyleSheet } from "react-native";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
 import { getResponse, detectCrisis } from "./chatbot";
 
-
-
 const ChatBots = () => {
   const [messages, setMessages] = useState([]);
 
@@ -28,7 +26,9 @@ const ChatBots = () => {
     );
 
     const userMessage = newMessages[0].text;
-    const botResponse = await getResponse(userMessage);
+    // Pass the entire messages array (excluding the newest user message) as history
+    const history = messages;
+    const botResponse = await getResponse(userMessage, history);
 
     // Show an alert if a crisis message is detected
     if (detectCrisis(userMessage)) {
@@ -39,26 +39,39 @@ const ChatBots = () => {
       );
     }
 
-    // Continue chatbot response in chat
-    setMessages((previousMessages) =>
-      GiftedChat.append(previousMessages, [
-        {
-          _id: Math.random().toString(),
-          text: botResponse.response,
-          createdAt: new Date(),
-          user: {
-            _id: 2,
-            name: botResponse.type === "crisis" ? "Crisis Support" : "Chatbot"
+    // Handle off-topic response
+    if (botResponse.type === "off-topic") {
+      setMessages((previousMessages) =>
+        GiftedChat.append(previousMessages, [
+          {
+            _id: Math.random().toString(),
+            text: botResponse.response,
+            createdAt: new Date(),
+            user: { _id: 2, name: "Chatbot" }
           }
-        }
-      ])
-    );
+        ])
+      );
+    } else {
+      // Continue chatbot response in chat for other types (rule, ai, crisis)
+      setMessages((previousMessages) =>
+        GiftedChat.append(previousMessages, [
+          {
+            _id: Math.random().toString(),
+            text: botResponse.response,
+            createdAt: new Date(),
+            user: {
+              _id: 2,
+              name: botResponse.type === "crisis" ? "Crisis Support" : "Chatbot"
+            }
+          }
+        ])
+      );
+    }
   };
 
   return (
-
     <GiftedChat 
-    listViewProps={{style: {backgroundColor: '#25292e'}}}
+      listViewProps={{ style: { backgroundColor: '#25292e' } }}
       messages={messages}
       onSend={(newMessages) => onSend(newMessages)}
       user={{ _id: 1 }}
@@ -72,7 +85,6 @@ const ChatBots = () => {
         />
       )}
     />
-
   );
 };
 
