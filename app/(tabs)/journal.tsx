@@ -1,10 +1,9 @@
-// app/(tabs)/journal.tsx
 import { Text, View, StyleSheet, TextInput, TouchableOpacity, FlatList, ScrollView, Dimensions } from "react-native";
 import React, { useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DatePickerInput } from 'react-native-paper-dates';
 import { BarChart } from 'react-native-chart-kit';
-import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
+import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeContext } from '../utils/ThemeContext';
 import { themes } from '../utils/theme';
 
@@ -116,14 +115,10 @@ export default function Journal() {
 
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible feelings
       const feelings = ["fantastic", "good", "neutral", "bad", "horrible"];
-      
-      // Count occurrences of each feeling
       const feelingCounts = feelings.map(feeling => 
         records.filter(record => record.Q1 === feeling).length
       );
-  
       const newData = {
         labels: feelings,
         datasets: [{
@@ -136,7 +131,6 @@ export default function Journal() {
     if (records.length > 0) {
       updateChartData();
     } else {
-      // Default data if no records exist
       setChartData({
         labels: ["fantastic", "good", "neutral", "bad", "horrible"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
@@ -146,14 +140,10 @@ export default function Journal() {
 
   useEffect(() => {
     const updateChartData = () => {
-      // Define the possible fun numbers
       const funnumber = ["1", "2", "3", "4", "5"];
-      
-      // Count occurrences of each fun number
       const funnumberCounts = funnumber.map(funnumber => 
         records.filter(record => record.Q2 === funnumber).length
       );
-  
       const newData2 = {
         labels: funnumber,
         datasets: [{
@@ -166,7 +156,6 @@ export default function Journal() {
     if (records.length > 0) {
       updateChartData();
     } else {
-      // Default data if no records exist
       setChartData2({
         labels: ["1", "2", "3", "4", "5"],
         datasets: [{ data: [0, 0, 0, 0, 0] }]
@@ -174,10 +163,9 @@ export default function Journal() {
     }
   }, [records]);
 
-  // Define gradient colors for light and dark themes
   const gradientColors = theme === 'light'
-    ? ['#f5f7fa', '#e4e9f0', '#d9e1e8'] // Light theme gradient
-    : ['#1a1d21', '#2f3439', '#3d4450']; // Dark theme gradient
+    ? ['#f5f7fa', '#e4e9f0', '#d9e1e8']
+    : ['#1a1d21', '#2f3439', '#3d4450'];
 
   return (
     <LinearGradient colors={gradientColors} style={styles.gradient}>
@@ -257,71 +245,11 @@ export default function Journal() {
                         </TouchableOpacity>
                       </View>
                     ) : (
-                      <View style={styles.innerContainer}>
-                        {StatsPage ? (
-                          <View>
-                            <Text style={[styles.text, { color: themes[theme].text }]}>Overall rating of how you felt</Text>
-                            <BarChart
-                              data={chartData}
-                              width={500}
-                              height={220}
-                              chartConfig={{
-                                backgroundColor: 'transparent',
-                                backgroundGradientFrom: 'transparent',
-                                backgroundGradientTo: 'transparent',
-                                backgroundGradientFromOpacity: 0,
-                                backgroundGradientToOpacity: 0,
-                                decimalPlaces: 0,
-                                color: () => theme === 'light' ? `rgba(0, 150, 0, 1)` : `rgba(0, 255, 0, 1)`, // Darker green in light mode, brighter in dark mode
-                                fillShadowGradient: theme === 'light' ? '#006400' : '#00FF00',
-                                fillShadowGradientTo: theme === 'light' ? '#006400' : '#00FF00',
-                                fillShadowGradientOpacity: 1,
-                                labelColor: () => themes[theme].text,
-                                propsForBackgroundLines: {
-                                  strokeWidth: "0",
-                                },
-                              }}
-                            />
-                            <Text style={[styles.text, { color: themes[theme].text }]}>Overall fun rating</Text>
-                            <BarChart
-                              data={chartData2}
-                              width={500}
-                              height={220}
-                              chartConfig={{
-                                backgroundColor: 'transparent',
-                                backgroundGradientFrom: 'transparent',
-                                backgroundGradientTo: 'transparent',
-                                backgroundGradientFromOpacity: 0,
-                                backgroundGradientToOpacity: 0,
-                                decimalPlaces: 0,
-                                color: () => theme === 'light' ? `rgba(0, 150, 0, 1)` : `rgba(0, 255, 0, 1)`,
-                                fillShadowGradient: theme === 'light' ? '#006400' : '#00FF00',
-                                fillShadowGradientTo: theme === 'light' ? '#006400' : '#00FF00',
-                                fillShadowGradientOpacity: 1,
-                                labelColor: () => themes[theme].text,
-                                propsForBackgroundLines: {
-                                  strokeWidth: "0",
-                                },
-                              }}
-                            />
-                            <TouchableOpacity onPress={() => setStatsPage(false)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
-                            </TouchableOpacity>
-                          </View>
-                        ) : (
-                          <View>
-                            <Text style={[styles.startText, { color: themes[theme].text }]}>My Journal</Text>
-                            <TouchableOpacity onPress={() => setInputDate(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Start</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleEnd()} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Journal Entries</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setStatsPage(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>My Stats</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
+                      <View>
+                        <Text style={[styles.startText, { color: themes[theme].text }]}>My Journal</Text>
+                        <TouchableOpacity onPress={() => setInputDate(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Start</Text>
+                        </TouchableOpacity>
                       </View>
                     )}
                   </View>
@@ -383,6 +311,7 @@ const styles = StyleSheet.create({
     margin: 10,
     borderWidth: 4,
     borderRadius: 18,
+    width: 150,
   },
   buttonText: {},
   deleteButton: {
