@@ -8,13 +8,13 @@ import { ThemeContext } from '../utils/ThemeContext';
 import { themes } from '../utils/theme';
 import { useRouter } from "expo-router";
 
-
 type TestRecord = {
   id: number;
   date: string;
   Q1: string;
   Q2: string;
   userDesc: string;
+  username: string;
 };
 
 export default function Journal() {
@@ -31,6 +31,7 @@ export default function Journal() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [chartData, setChartData] = useState({ labels: [], datasets: [{ data: [] }] });
   const [chartData2, setChartData2] = useState({ labels: [], datasets: [{ data: [] }] });
+  const [currentUsername, setCurrentUsername] = useState("");
   const router = useRouter();
 
   const jQues = [
@@ -79,9 +80,18 @@ export default function Journal() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Load current user
+        const username = await AsyncStorage.getItem("currentUser");
+        if (username) {
+          setCurrentUsername(username);
+        }
+
+        // Load journal entries
         const storedData = await AsyncStorage.getItem('storedJson');
         if (storedData !== null) {
-          setRecords(JSON.parse(storedData));
+          const allRecords = JSON.parse(storedData);
+          // Filter records for current user
+          setRecords(allRecords.filter(record => record.username === username));
         }
       } catch (e) {
         console.error('Failed to load data', e);
@@ -93,13 +103,20 @@ export default function Journal() {
   useEffect(() => {
     const storeData = async () => {
       try {
-        await AsyncStorage.setItem('storedJson', JSON.stringify(records));
+        // Load all records to preserve other users' data
+        const storedData = await AsyncStorage.getItem('storedJson');
+        const allRecords = storedData ? JSON.parse(storedData) : [];
+        // Update only current user's records
+        const otherRecords = allRecords.filter(record => record.username !== currentUsername);
+        await AsyncStorage.setItem('storedJson', JSON.stringify([...otherRecords, ...records]));
       } catch (e) {
         console.error('Failed to save data', e);
       }
     };
-    storeData();
-  }, [records]);
+    if (currentUsername) {
+      storeData();
+    }
+  }, [records, currentUsername]);
 
   const addData = () => {
     const newRecord = {
@@ -108,6 +125,7 @@ export default function Journal() {
       Q1: pickedOption[0],
       Q2: pickedOption[1],
       userDesc: userInput,
+      username: currentUsername,
     };
     setRecords([...records, newRecord]);
   };
@@ -249,85 +267,84 @@ export default function Journal() {
                       </View>
                     ) : (
                       <View style={styles.container}>
-                      {StatsPage ? (
-                        <View>
-                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Overall rating of how you felt</Text>
-                          <BarChart
-                            data={chartData}
-                            width={Dimensions.get('window').width - 40}
-                            height={220}
-                            yAxisLabel=""
-                            yAxisSuffix=""
-                            chartConfig={{
-                              backgroundColor: '#25282d',
-                              backgroundGradientFrom: '#25282d',
-                              backgroundGradientTo: '#25282d',
-                              decimalPlaces: 0,
-                              color: () => `rgba(0, 255, 0, 1)`,
-                              fillShadowGradient: '#00FF00',
-                              fillShadowGradientTo: '#00FF00',
-                              fillShadowGradientOpacity: 1,
-                              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                              propsForBackgroundLines: {
-                                strokeWidth: 0,
-                              },
-                              formatYLabel: (value) => Math.round(value).toString(),
-                              barPercentage: 1,
-                            }}
-                            fromZero={true}
-                          />
-                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Overall fun rating</Text>
-                          <BarChart
-                            data={chartData2}
-                            width={Dimensions.get('window').width - 40}
-                            height={220}
-                            yAxisLabel=""
-                            yAxisSuffix=""
-                            chartConfig={{
-                              backgroundColor: '#25282d',
-                              backgroundGradientFrom: '#25282d',
-                              backgroundGradientTo: '#25282d',
-                              decimalPlaces: 0,
-                              color: () => `rgba(0, 255, 0, 1)`,
-                              fillShadowGradient: '#00FF00',
-                              fillShadowGradientTo: '#00FF00',
-                              fillShadowGradientOpacity: 1,
-                              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                              propsForBackgroundLines: {
-                                strokeWidth: 0,
-                              },
-                              formatYLabel: (value) => Math.round(value).toString(),
-                              barPercentage: 1,
-                            }}
-                            fromZero={true}
-                          />
-                          <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
-                            <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
-                          </TouchableOpacity>
-                        </View>
-                          ) : (
-                      <View>
-                        <Text style={[styles.startText, { color: themes[theme].text }]}>My Journal</Text>
-                        <TouchableOpacity onPress={() => setInputDate(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Start</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleEnd()} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                        <Text style={[styles.buttonText, { color: themes[theme].text }]}>Journal Entries</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setStatsPage(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
-                        <Text style={[styles.buttonText, { color: themes[theme].text }]}>My Stats</Text>
-                      </TouchableOpacity>
-                    </View>
-                      )}
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      )}
-
+                        {StatsPage ? (
+                          <View>
+                            <Text style={[styles.buttonText, { color: themes[theme].text }]}>Overall rating of how you felt</Text>
+                            <BarChart
+                              data={chartData}
+                              width={Dimensions.get('window').width - 40}
+                              height={220}
+                              yAxisLabel=""
+                              yAxisSuffix=""
+                              chartConfig={{
+                                backgroundColor: '#25282d',
+                                backgroundGradientFrom: '#25282d',
+                                backgroundGradientTo: '#25282d',
+                                decimalPlaces: 0,
+                                color: () => `rgba(0, 255, 0, 1)`,
+                                fillShadowGradient: '#00FF00',
+                                fillShadowGradientTo: '#00FF00',
+                                fillShadowGradientOpacity: 1,
+                                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                                propsForBackgroundLines: {
+                                  strokeWidth: 0,
+                                },
+                                formatYLabel: (value) => Math.round(value).toString(),
+                                barPercentage: 1,
+                              }}
+                              fromZero={true}
+                            />
+                            <Text style={[styles.buttonText, { color: themes[theme].text }]}>Overall fun rating</Text>
+                            <BarChart
+                              data={chartData2}
+                              width={Dimensions.get('window').width - 40}
+                              height={220}
+                              yAxisLabel=""
+                              yAxisSuffix=""
+                              chartConfig={{
+                                backgroundColor: '#25282d',
+                                backgroundGradientFrom: '#25282d',
+                                backgroundGradientTo: '#25282d',
+                                decimalPlaces: 0,
+                                color: () => `rgba(0, 255, 0, 1)`,
+                                fillShadowGradient: '#00FF00',
+                                fillShadowGradientTo: '#00FF00',
+                                fillShadowGradientOpacity: 1,
+                                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                                propsForBackgroundLines: {
+                                  strokeWidth: 0,
+                                },
+                                formatYLabel: (value) => Math.round(value).toString(),
+                                barPercentage: 1,
+                              }}
+                              fromZero={true}
+                            />
+                            <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <View>
+                            <Text style={[styles.startText, { color: themes[theme].text }]}>My Journal</Text>
+                            <TouchableOpacity onPress={() => setInputDate(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Start</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleEnd()} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>Journal Entries</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setStatsPage(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                              <Text style={[styles.buttonText, { color: themes[theme].text }]}>My Stats</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </LinearGradient>
   );

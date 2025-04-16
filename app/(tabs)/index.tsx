@@ -226,15 +226,7 @@ export default function HomeScreen() {
                 </Pressable>
               ))
             )}
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={async () => {
-                await AsyncStorage.removeItem("currentUser");
-                router.replace("/(auth)/Login");
-              }}
-            >
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
+
           </View>
         </ScrollView>
       </LinearGradient>
@@ -373,17 +365,5 @@ const styles = StyleSheet.create({
   streakText: {
     fontSize: 22,
     fontWeight: '700',
-  },
-  logoutButton: {
-    backgroundColor: '#F44336',
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
   },
 });

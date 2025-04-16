@@ -1,6 +1,6 @@
 // app/(tabs)/profile.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, Switch, Pressable, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, Switch, Pressable, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import { ThemeContext } from '../utils/ThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { scheduleDailyReminder } from '../utils/notificationUtils';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router, useRouter } from 'expo-router';
 
 // Debounce helper function
 const debounce = (func, delay) => {
@@ -268,6 +269,15 @@ export default function ProfileScreen() {
               <Pressable style={styles.editButton} onPress={() => setIsEditing(true)}>
                 <Text style={styles.buttonText}>Edit Profile</Text>
               </Pressable>
+              <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={async () => {
+                await AsyncStorage.removeItem("currentUser");
+                router.replace("/(auth)/Login");
+              }}
+            >
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -381,5 +391,18 @@ const styles = StyleSheet.create({
   },
   androidPicker: {
     backgroundColor: '#ffffff', // Ensure Android picker has a visible background in light mode
+  },
+  
+  logoutButton: {
+    backgroundColor: '#F44336',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
