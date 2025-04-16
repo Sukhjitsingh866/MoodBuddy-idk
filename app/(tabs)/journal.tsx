@@ -251,7 +251,7 @@ export default function Journal() {
                       <View style={styles.container}>
                       {StatsPage ? (
                         <View>
-                          <Text style={styles.text}>Overall rating of how you felt</Text>
+                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Overall rating of how you felt</Text>
                           <BarChart
                             data={chartData}
                             width={Dimensions.get('window').width - 40}
@@ -276,7 +276,7 @@ export default function Journal() {
                             }}
                             fromZero={true}
                           />
-                          <Text style={styles.text}>Overall fun rating</Text>
+                          <Text style={[styles.buttonText, { color: themes[theme].text }]}>Overall fun rating</Text>
                           <BarChart
                             data={chartData2}
                             width={Dimensions.get('window').width - 40}
@@ -302,7 +302,7 @@ export default function Journal() {
                             fromZero={true}
                           />
                           <TouchableOpacity onPress={() => setStatsPage(false)} style={styles.button}>
-                            <Text>Back</Text>
+                            <Text style={[styles.buttonText, { color: themes[theme].text }]}>Back</Text>
                           </TouchableOpacity>
                         </View>
                           ) : (
@@ -311,11 +311,11 @@ export default function Journal() {
                         <TouchableOpacity onPress={() => setInputDate(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
                           <Text style={[styles.buttonText, { color: themes[theme].text }]}>Start</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleEnd()} style={styles.button}>
-                        <Text>Journal Entries</Text>
+                        <TouchableOpacity onPress={() => handleEnd()} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                        <Text style={[styles.buttonText, { color: themes[theme].text }]}>Journal Entries</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setStatsPage(true)} style={styles.button}>
-                        <Text>My Stats</Text>
+                      <TouchableOpacity onPress={() => setStatsPage(true)} style={[styles.button, { backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(37, 41, 46, 0.8)', borderColor: themes[theme].highlight }]}>
+                        <Text style={[styles.buttonText, { color: themes[theme].text }]}>My Stats</Text>
                       </TouchableOpacity>
                     </View>
                       )}
