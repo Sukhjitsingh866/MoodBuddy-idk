@@ -17,6 +17,9 @@
         "backgroundColor": "#ffffff"
       }
     },
+    "notification": {
+      "color": "#ffd33d"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
