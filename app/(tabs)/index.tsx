@@ -1,13 +1,12 @@
-// app/(tabs)/index.tsx
 import React, { useState, useEffect, Component } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import data from '@/assets/quotes.json';
 import { Calendar } from 'react-native-calendars';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { ThemeContext } from '../utils/ThemeContext';
 import { themes } from '../utils/theme';
 
@@ -70,6 +69,7 @@ export default function HomeScreen() {
   const [quote, setQuote] = useState(getRandomQuote());
   const [lastQuoteDate, setLastQuoteDate] = useState<string | null>(null);
   const isFocused = useIsFocused();
+  const router = useRouter();
 
   useEffect(() => {
     const updateQuote = async () => {
@@ -226,6 +226,15 @@ export default function HomeScreen() {
                 </Pressable>
               ))
             )}
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={async () => {
+                await AsyncStorage.removeItem("currentUser");
+                router.replace("/(auth)/Login");
+              }}
+            >
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </LinearGradient>

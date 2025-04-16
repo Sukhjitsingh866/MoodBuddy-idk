@@ -1,4 +1,3 @@
-// app/(tabs)/layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -7,17 +6,28 @@ import React, { useEffect } from 'react';
 import { ThemeContext, ThemeProvider } from '../utils/ThemeContext';
 import { themes } from '../utils/theme';
 import { setupNotifications, setupNotificationListener, scheduleDailyReminder, setupNotificationRescheduling } from '../utils/notificationUtils';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function TabsLayoutInner() {
   const { theme, notificationsEnabled, notificationTime } = React.useContext(ThemeContext);
   const navigation = useNavigation();
+  const router = useRouter();
 
   useEffect(() => {
-    // Clear all scheduled notifications at app start to prevent leftovers (native only)
+    // Check for logged-in user
+    const checkUser = async () => {
+      const user = await AsyncStorage.getItem("currentUser");
+      if (!user) {
+        router.replace("/(auth)/Login");
+      }
+    };
+    checkUser();
+
+    // Existing notification setup
     if (Platform.OS !== 'web') {
       Notifications.cancelAllScheduledNotificationsAsync().then(() => {
         console.log('Manually cleared all scheduled notifications at app start (native)');
@@ -148,7 +158,7 @@ function TabsLayoutInner() {
             <Ionicons 
               name={focused ? "trophy" : "trophy-outline"} 
               size={size} 
-              color={color} 
+              color={color}
             />
           ),
         }}
