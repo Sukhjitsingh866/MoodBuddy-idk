@@ -29,14 +29,14 @@ export default function Login() {
         users.push({ username, password });
         await AsyncStorage.setItem("users", JSON.stringify(users));
         await AsyncStorage.setItem("currentUser", username);
-        console.log("Redirecting to /tabs");
-        router.replace("/tabs");
+        console.log("Redirecting to home page");
+        router.replace("/");
       } else {
         const user = users.find((u) => u.username === username && u.password === password);
         if (user) {
           await AsyncStorage.setItem("currentUser", username);
-          console.log("Redirecting to /tabs");
-          router.replace("/tabs");
+          console.log("Redirecting to home page");
+          router.replace("/");
         } else {
           setError("Invalid username or password");
         }
